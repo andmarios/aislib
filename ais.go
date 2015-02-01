@@ -1,10 +1,7 @@
 package ais
 
 import (
-	"bufio"
 	"log"
-	"os"
-	"strings"
 	"encoding/hex"
 	"math"
 	"fmt"
@@ -31,34 +28,6 @@ type AisPositionMessage struct {
 	Radio    uint32  // Radio status
 }
 
-func main() {
-	in := bufio.NewScanner(os.Stdin)
-	in.Split(bufio.ScanLines)
-
-	for in.Scan() {
-
-		line := in.Text()
-
-		if Nmea183ChecksumCheck(line) {
-
-			tokens := strings.Split(line, ",")
-			if tokens[0] == "!AIVDM" && // Sentence is AIS data
-				tokens[1] == "1" &&     // Payload doesn't span across two sentences (ok for messages 1/2/3)
-				tokens[6][:1] == "0" {  // Message doesn't need weird padding (ok for messages 1/2/3)
-
-				//log.Println("Line length:", len(line), "Tokens:", len(tokens), "Payload:", tokens[5], "Checksum:", nmea183ChecksumCheck(line))
-				PrintAisData(DecodeAisPosition(tokens[5]))
-			} else {
-				log.Println("There was an error with message:", line)
-			}
-
-		} else {
-			log.Println("Checksum failed:", line)
-		}
-	}
-
-}
-
 func decodeAisChar(character byte) byte {
 	character -= 48
 	if character > 40 {
@@ -72,7 +41,6 @@ func AisMessageType(payload string) uint8 {
 
 	return decodeAisChar(data[0])
 }
-
 
 func DecodeAisPosition(payload string) AisPositionMessage {
 	data := []byte(payload)
@@ -121,7 +89,6 @@ func DecodeAisPosition(payload string) AisPositionMessage {
 	m.Lat = float64((int32(decodeAisChar(data[14])) << 31 + int32(decodeAisChar(data[15])) << 25 +
 		int32(decodeAisChar(data[16])) << 19 + int32(decodeAisChar(data[17])) << 13 + int32(decodeAisChar(data[18])) << 7 + int32(decodeAisChar(data[19])) >> 4 << 5 )) / 32
 	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
-	//log.Println(CoordinatesDeg2Human(m.Lon, m.Lat))
 
 	return m
 
