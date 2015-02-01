@@ -3,6 +3,7 @@ package ais
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestAisPosition(t *testing.T) {
@@ -51,4 +52,20 @@ func TestCoordinatesDeg2Human(t *testing.T) {
 	}
 }
 
-
+func TestGetReferenceTime(t *testing.T) {
+	cases := []struct {
+		payload, reference string
+	} {
+		{ "4025;PAuho;N>0NJbfMRhNA00D3l", "2012/3/14 11:30:14" },
+		{ "403tDGiuho;P5<tSF0l4Q@000l67", "2012/3/14 11:32:5" },
+	}
+	for _, c := range cases {
+		got, _ := GetReferenceTime(c.payload)
+		want, _ := time.Parse("2006/1/2 15:4:5", c.reference)
+		if got != want {
+			fmt.Println("Got : ", got)
+			fmt.Println("Want: ", want)
+			t.Errorf("GetReferenceTime(payload string)")
+		}
+	}
+}

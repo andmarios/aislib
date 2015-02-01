@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"errors"
+	"time"
 )
 
 // Please have a look at <http://catb.org/gpsd/AIVDM.html> and at <http://www.navcen.uscg.gov/?pageName=AISMessagesA>
@@ -43,7 +44,6 @@ func AisMessageType(payload string) uint8 {
 
 func DecodeAisPosition(payload string) (AisPositionMessage, error) {
 	data := []byte(payload)
-
 	var m AisPositionMessage
 
 	m.Type = decodeAisChar(data[0])
@@ -101,6 +101,32 @@ func DecodeAisPosition(payload string) (AisPositionMessage, error) {
 	}
 
 	return m, nil
+}
+
+func GetReferenceTime(payload string) (time.Time, error){
+	data := []byte(payload)
+
+	year := uint16(decodeAisChar(data[6])) << 12 >> 2 | uint16(decodeAisChar(data[7])) << 4 | uint16(decodeAisChar(data[8])) >> 2
+
+	if year == 0 {
+		var t time.Time
+		return t, errors.New("station doesn't report time")
+	}
+
+	month := decodeAisChar(data[8]) << 6 >> 4 | decodeAisChar(data[9]) >> 4
+
+	day := decodeAisChar(data[9]) << 4 >> 3 | decodeAisChar(data[10]) >> 5
+
+	hour := decodeAisChar(data[10]) << 3 >> 3
+
+	minute := decodeAisChar(data[11])
+
+	second := decodeAisChar(data[12])
+
+	timeString := fmt.Sprintf("%d/%d/%d %d:%d:%d", year, month, day, hour, minute, second)
+	t, _ := time.Parse("2006/1/2 15:4:5", timeString)
+
+	return t, nil
 }
 
 func CoordinatesMin2Deg(minLon, minLat float64) (float64, float64) {
@@ -212,21 +238,49 @@ func PrintAisPositionData(m AisPositionMessage) string {
 	case m.Course < 360:
 		course = fmt.Sprintf("%.1f°", m.Course)
 	case m.Course == 360:
-		course = fmt.Sprintf("not available")
+		course = "not available"
 	case m.Course > 360:
-		course = fmt.Sprintf("please report this to developer")
+		course = "please report this to developer"
+	}
+
+	heading := ""
+	switch {
+	case m.Heading <= 359:
+		heading = fmt.Sprintf("%d°", m.Heading)
+	case m.Heading == 511:
+		heading = "not available"
+	case m.Heading != 511 && m.Heading >= 360:
+		heading = "please report this to developer"
+	}
+
+	maneuver := ""
+	switch {
+	case m.Maneuver == 0:
+		maneuver = "not available"
+	case m.Maneuver == 1:
+		maneuver = "no special maneuver"
+	case m.Maneuver == 2:
+		maneuver = "special maneuver"
+	}
+
+	raim := "not in use"
+	if m.RAIM == true {
+		raim = "in use"
 	}
 
 	message :=
 		fmt.Sprintf("=== Message Type %d ===\n", m.Type) +
-		fmt.Sprintf(" Repeat      : %d\n", m.Repeat) +
-		fmt.Sprintf(" MMSI        : %d\n", m.MMSI) +
-		fmt.Sprintf(" Nav.Status  : %s\n", status[m.Status]) +
-		fmt.Sprintf(" Turn (ROT)  : %s\n", turn) +
-		fmt.Sprintf(" Speed (SOG) : %s\n", speed) +
-		fmt.Sprintf(" Accuracy    : %s\n", accuracy) +
-		fmt.Sprintf(" Coordinates : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
-		fmt.Sprintf(" Course (COG): %s\n", course)
+		fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
+		fmt.Sprintf(" MMSI         : %d\n", m.MMSI) +
+		fmt.Sprintf(" Nav.Status   : %s\n", status[m.Status]) +
+		fmt.Sprintf(" Turn (ROT)   : %s\n", turn) +
+		fmt.Sprintf(" Speed (SOG)  : %s\n", speed) +
+		fmt.Sprintf(" Accuracy     : %s\n", accuracy) +
+		fmt.Sprintf(" Coordinates  : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
+		fmt.Sprintf(" Course (COG) : %s\n", course) +
+		fmt.Sprintf(" Heading (HDG): %s\n", heading) +
+		fmt.Sprintf(" Manuever ind.: %s\n", maneuver) +
+		fmt.Sprintf(" RAIM         : %s\n", raim)
 
 	return message
 }
@@ -252,10 +306,3 @@ func Nmea183ChecksumCheck(sentence string) bool {
 	}
 	return false
 }
-
-
-
-
-
-
-
