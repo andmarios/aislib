@@ -2,10 +2,10 @@ package ais
 
 import (
 	"encoding/hex"
-	"math"
-	"fmt"
-	"strconv"
 	"errors"
+	"fmt"
+	"math"
+	"strconv"
 	"time"
 )
 
@@ -56,66 +56,66 @@ func DecodeAisPosition(payload string) (AisPositionMessage, error) {
 
 	m.MMSI = uint32(decodeAisChar(data[1])) << 28
 	m.MMSI = m.MMSI >> 2
-	m.MMSI += uint32(decodeAisChar(data[2])) << 20 | uint32(decodeAisChar(data[3])) << 14 | uint32(decodeAisChar(data[4])) << 8 | uint32(decodeAisChar(data[5])) << 2
+	m.MMSI += uint32(decodeAisChar(data[2]))<<20 | uint32(decodeAisChar(data[3]))<<14 | uint32(decodeAisChar(data[4]))<<8 | uint32(decodeAisChar(data[5]))<<2
 	m.MMSI += uint32(decodeAisChar(data[6])) >> 4
 
-	m.Status = ( decodeAisChar(data[6]) << 4 ) >> 4
+	m.Status = (decodeAisChar(data[6]) << 4) >> 4
 
-	m.Turn = float32(int8(decodeAisChar(data[7]) << 2 | decodeAisChar(data[8]) >> 4))
+	m.Turn = float32(int8(decodeAisChar(data[7])<<2 | decodeAisChar(data[8])>>4))
 	if m.Turn != 0 && m.Turn <= 126 && m.Turn >= -126 {
 		sign := float32(1)
 		if math.Signbit(float64(m.Turn)) {
 			sign = -1
 		}
-		m.Turn = sign * (m.Turn/4.733) * (m.Turn/4.733)
+		m.Turn = sign * (m.Turn / 4.733) * (m.Turn / 4.733)
 
 	}
 
-	m.Speed = float32(uint16(decodeAisChar(data[8])) << 12 >> 6 | uint16(decodeAisChar(data[9])))
+	m.Speed = float32(uint16(decodeAisChar(data[8]))<<12>>6 | uint16(decodeAisChar(data[9])))
 	if m.Speed < 1022 {
 		m.Speed = m.Speed / 10
 	}
 
 	m.Accuracy = false
-	if decodeAisChar(data[10]) >> 5 == 1 {
+	if decodeAisChar(data[10])>>5 == 1 {
 		m.Accuracy = true
 	}
 
-	m.Lon = float64((int32(decodeAisChar(data[10])) << 27 | int32(decodeAisChar(data[11])) << 21 |
-		int32(decodeAisChar(data[12])) << 15 | int32(decodeAisChar(data[13])) << 9 | int32(decodeAisChar(data[14])) >> 1 << 4)) / 16
-	m.Lat = float64((int32(decodeAisChar(data[14])) << 31 | int32(decodeAisChar(data[15])) << 25 |
-		int32(decodeAisChar(data[16])) << 19 | int32(decodeAisChar(data[17])) << 13 | int32(decodeAisChar(data[18])) << 7 | int32(decodeAisChar(data[19])) >> 4 << 5 )) / 32
+	m.Lon = float64((int32(decodeAisChar(data[10]))<<27 | int32(decodeAisChar(data[11]))<<21 |
+		int32(decodeAisChar(data[12]))<<15 | int32(decodeAisChar(data[13]))<<9 | int32(decodeAisChar(data[14]))>>1<<4)) / 16
+	m.Lat = float64((int32(decodeAisChar(data[14]))<<31 | int32(decodeAisChar(data[15]))<<25 |
+		int32(decodeAisChar(data[16]))<<19 | int32(decodeAisChar(data[17]))<<13 | int32(decodeAisChar(data[18]))<<7 | int32(decodeAisChar(data[19]))>>4<<5)) / 32
 	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
 
-	m.Course = float32(uint16(decodeAisChar(data[19])) << 12 >> 4 | uint16(decodeAisChar(data[20])) << 2 | uint16(decodeAisChar(data[21])) >> 4) / 10
+	m.Course = float32(uint16(decodeAisChar(data[19]))<<12>>4|uint16(decodeAisChar(data[20]))<<2|uint16(decodeAisChar(data[21]))>>4) / 10
 
-	m.Heading = uint16(decodeAisChar(data[21])) << 12 >> 7 | uint16(decodeAisChar(data[22])) >> 1
+	m.Heading = uint16(decodeAisChar(data[21]))<<12>>7 | uint16(decodeAisChar(data[22]))>>1
 
-	m.Second = decodeAisChar(data[22]) << 7 >> 2 | decodeAisChar(data[23]) >> 1
+	m.Second = decodeAisChar(data[22])<<7>>2 | decodeAisChar(data[23])>>1
 
-	m.Maneuver = decodeAisChar(data[23]) << 7 >> 6 | decodeAisChar(data[24]) >> 5
+	m.Maneuver = decodeAisChar(data[23])<<7>>6 | decodeAisChar(data[24])>>5
 
 	m.RAIM = false
-	if decodeAisChar(data[24]) << 6 >> 7 == 1 {
+	if decodeAisChar(data[24])<<6>>7 == 1 {
 		m.RAIM = true
 	}
 
 	return m, nil
 }
 
-func GetReferenceTime(payload string) (time.Time, error){
+func GetReferenceTime(payload string) (time.Time, error) {
 	data := []byte(payload)
 
-	year := uint16(decodeAisChar(data[6])) << 12 >> 2 | uint16(decodeAisChar(data[7])) << 4 | uint16(decodeAisChar(data[8])) >> 2
+	year := uint16(decodeAisChar(data[6]))<<12>>2 | uint16(decodeAisChar(data[7]))<<4 | uint16(decodeAisChar(data[8]))>>2
 
 	if year == 0 {
 		var t time.Time
 		return t, errors.New("station doesn't report time")
 	}
 
-	month := decodeAisChar(data[8]) << 6 >> 4 | decodeAisChar(data[9]) >> 4
+	month := decodeAisChar(data[8])<<6>>4 | decodeAisChar(data[9])>>4
 
-	day := decodeAisChar(data[9]) << 4 >> 3 | decodeAisChar(data[10]) >> 5
+	day := decodeAisChar(data[9])<<4>>3 | decodeAisChar(data[10])>>5
 
 	hour := decodeAisChar(data[10]) << 3 >> 3
 
@@ -142,15 +142,15 @@ func CoordinatesMin2Deg(minLon, minLat float64) (float64, float64) {
 		latSign = -1
 	}
 
-	degrees := float64(int(minLon/600000))
-	minutes := float64(minLon - 600000*degrees)/10000
+	degrees := float64(int(minLon / 600000))
+	minutes := float64(minLon-600000*degrees) / 10000
 	lon := degrees + minutes/60
 
-	degrees = float64(int(minLat/600000))
-	minutes = float64(minLat - 600000*degrees)/10000
+	degrees = float64(int(minLat / 600000))
+	minutes = float64(minLat-600000*degrees) / 10000
 	lat := degrees + minutes/60
 
-	return lonSign*lon, latSign*lat
+	return lonSign * lon, latSign * lat
 }
 
 func CoordinatesDeg2Human(degLon, degLat float64) string {
@@ -168,8 +168,7 @@ func CoordinatesDeg2Human(degLon, degLat float64) string {
 	}
 
 	degrees := math.Floor(degLon)
-	minutes := 60*(degLon - degrees)
-
+	minutes := 60 * (degLon - degrees)
 
 	if degrees > 180 {
 		coordinates = "longitude not available, "
@@ -180,11 +179,11 @@ func CoordinatesDeg2Human(degLon, degLat float64) string {
 	}
 
 	degrees = math.Floor(degLat)
-	minutes = 60*(degLat - degrees)
+	minutes = 60 * (degLat - degrees)
 
 	if degrees > 90 {
 		coordinates += "latitude not available"
-	}else if latSign > 0 {
+	} else if latSign > 0 {
 		coordinates += fmt.Sprintf(" %3.0f°%07.4f%s", degrees, minutes, "N")
 	} else {
 		coordinates += fmt.Sprintf(" %3.0f°%07.4f%s", degrees, minutes, "S")
@@ -202,7 +201,7 @@ func PrintAisPositionData(m AisPositionMessage) string {
 	turn := ""
 	switch {
 	case m.Turn == 0:
-		turn = "not turning";
+		turn = "not turning"
 	case m.Turn == 127:
 		turn = "right at more than 5deg/30s"
 	case m.Turn == -127:
@@ -270,17 +269,17 @@ func PrintAisPositionData(m AisPositionMessage) string {
 
 	message :=
 		fmt.Sprintf("=== Message Type %d ===\n", m.Type) +
-		fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
-		fmt.Sprintf(" MMSI         : %d\n", m.MMSI) +
-		fmt.Sprintf(" Nav.Status   : %s\n", status[m.Status]) +
-		fmt.Sprintf(" Turn (ROT)   : %s\n", turn) +
-		fmt.Sprintf(" Speed (SOG)  : %s\n", speed) +
-		fmt.Sprintf(" Accuracy     : %s\n", accuracy) +
-		fmt.Sprintf(" Coordinates  : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
-		fmt.Sprintf(" Course (COG) : %s\n", course) +
-		fmt.Sprintf(" Heading (HDG): %s\n", heading) +
-		fmt.Sprintf(" Manuever ind.: %s\n", maneuver) +
-		fmt.Sprintf(" RAIM         : %s\n", raim)
+			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
+			fmt.Sprintf(" MMSI         : %d\n", m.MMSI) +
+			fmt.Sprintf(" Nav.Status   : %s\n", status[m.Status]) +
+			fmt.Sprintf(" Turn (ROT)   : %s\n", turn) +
+			fmt.Sprintf(" Speed (SOG)  : %s\n", speed) +
+			fmt.Sprintf(" Accuracy     : %s\n", accuracy) +
+			fmt.Sprintf(" Coordinates  : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
+			fmt.Sprintf(" Course (COG) : %s\n", course) +
+			fmt.Sprintf(" Heading (HDG): %s\n", heading) +
+			fmt.Sprintf(" Manuever ind.: %s\n", maneuver) +
+			fmt.Sprintf(" RAIM         : %s\n", raim)
 
 	return message
 }
@@ -295,7 +294,7 @@ func Nmea183ChecksumCheck(sentence string) bool {
 		return false
 	}
 
-	bline := []byte(sentence[1:length-3])
+	bline := []byte(sentence[1 : length-3])
 	ccsum := bline[0]
 	for i := 1; i < len(bline); i++ {
 		ccsum ^= bline[i]

@@ -2,12 +2,12 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
-	"strings"
 	"projects.30ohm.com/mrsaccess/ais"
-	"fmt"
-//	"time"
+	"strings"
+	//	"time"
 )
 
 func main() {
@@ -22,11 +22,11 @@ func main() {
 
 			tokens := strings.Split(line, ",")
 			if tokens[0] == "!AIVDM" && // Sentence is ais data
-				tokens[1] == "1" &&     // Payload doesn't span across two sentences (ok for messages 1/2/3)
-				tokens[6][:1] == "0" {  // Message doesn't need weird padding (ok for messages 1/2/3)
+				tokens[1] == "1" && // Payload doesn't span across two sentences (ok for messages 1/2/3)
+				tokens[6][:1] == "0" { // Message doesn't need weird padding (ok for messages 1/2/3)
 
 				messageType := ais.AisMessageType(tokens[5])
-				if messageType >=1 && messageType <=3 {
+				if messageType >= 1 && messageType <= 3 {
 
 					message, err := ais.DecodeAisPosition(tokens[5])
 					if err != nil {
