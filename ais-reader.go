@@ -110,49 +110,89 @@ func DecodeAisPosition(payload string) {
 	}
 
 	m.Lon = float64((int32(decodeAisChar(data[10])) << 27 + int32(decodeAisChar(data[11])) << 21 +
-		int32(decodeAisChar(data[12])) << 15 + int32(decodeAisChar(data[13])) << 9 + int32(decodeAisChar(data[14])) >> 1 << 4))
-	m.Lon = m.Lon/16
+		int32(decodeAisChar(data[12])) << 15 + int32(decodeAisChar(data[13])) << 9 + int32(decodeAisChar(data[14])) >> 1 << 4)) / 16
 	m.Lat = float64((int32(decodeAisChar(data[14])) << 31 + int32(decodeAisChar(data[15])) << 25 +
-		int32(decodeAisChar(data[16])) << 19 + int32(decodeAisChar(data[17])) << 13 + int32(decodeAisChar(data[18])) << 7 + int32(decodeAisChar(data[19])) >> 4 << 5 ))
-	m.Lat = m.Lat/32
-	Degrees := int(m.Lon / 600000)
-	log.Println("Lon:", Degrees, "*", m.Lon/10000 - 60 * float64(Degrees))
-	Degrees = int(m.Lat / 600000)
-	log.Println("Lat:", Degrees, "*", m.Lat/10000 - 60 * float64(Degrees))
+		int32(decodeAisChar(data[16])) << 19 + int32(decodeAisChar(data[17])) << 13 + int32(decodeAisChar(data[18])) << 7 + int32(decodeAisChar(data[19])) >> 4 << 5 )) / 32
+	//Degrees := int(m.Lon / 600000)
+	//log.Println("Lon:", Degrees, "*", m.Lon/10000 - 60 * float64(Degrees))
+	//Degrees = int(m.Lat / 600000)
+	//log.Println("Lat:", Degrees, "*", m.Lat/10000 - 60 * float64(Degrees))
+	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
+	//log.Println(CoordinatesDeg2Human(m.Lon, m.Lat))
 
 	PrintAisData(m)
 
 }
 
+func CoordinatesMin2Deg(minLon, minLat float64) (float64, float64) {
+	lonSign := 1.0
+	latSign := 1.0
+
+	if math.Signbit(minLon) {
+		minLon = -minLon
+		lonSign = -1
+	}
+	if math.Signbit(minLat) {
+		minLat = -minLat
+		latSign = -1
+	}
+
+	degrees := float64(int(minLon/600000))
+	minutes := float64(minLon - 600000*degrees)/10000
+	lon := degrees + minutes/60
+
+	degrees = float64(int(minLat/600000))
+	minutes = float64(minLat - 600000*degrees)/10000
+	lat := degrees + minutes/60
+
+	return lonSign*lon, latSign*lat
+}
+
+func CoordinatesDeg2Human(degLon, degLat float64) string {
+	lonSign := 1.0
+	latSign := 1.0
+	coordinates := ""
+
+	if math.Signbit(degLon) {
+		degLon = -degLon
+		lonSign = -1
+	}
+	if math.Signbit(degLat) {
+		degLat = -degLat
+		latSign = -1
+	}
+
+	degrees := math.Floor(degLon)
+	minutes := 60*(degLon - degrees)
+
+
+	if degrees > 180 {
+		coordinates = "longitude not available, "
+	} else if lonSign > 0 {
+		coordinates = fmt.Sprintf("%3.0f°%07.4f'%s", degrees, minutes, "E")
+	} else {
+		coordinates = fmt.Sprintf("%3.0f°%07.4f'%s", degrees, minutes, "W")
+	}
+
+	degrees = math.Floor(degLat)
+	minutes = 60*(degLat - degrees)
+
+	if degrees > 90 {
+		coordinates += "latitude not available"
+	}else if latSign > 0 {
+		coordinates += fmt.Sprintf(" %3.0f°%07.4f%s", degrees, minutes, "N")
+	} else {
+		coordinates += fmt.Sprintf(" %3.0f°%07.4f%s", degrees, minutes, "S")
+	}
+
+	return coordinates
+}
+
 func PrintAisData(m aisMessageT123) {
 
-	status := ""
-	switch {
-	case m.Status == 0:
-		status = "Under way using engine"
-	case m.Status == 1:
-		status = "At anchor"
-	case m.Status == 2:
-		status = "Not under command"
-	case m.Status == 3:
-		status = "Restricted maneuverability"
-	case m.Status == 4:
-		status = "Constrained by her draught"
-	case m.Status == 5:
-		status = "Moored"
-	case m.Status == 6:
-		status = "Aground"
-	case m.Status == 7:
-		status = "Engaged in fishing"
-	case m.Status == 8:
-		status = "Under way sailing"
-	case m.Status >= 9 && m.Status <= 13:
-		status = "status code reserved"
-	case m.Status == 14:
-		status = "AIS-SART is active"
-	case m.Status == 15:
-		status = "Not defined"
-	}
+	status := []string{"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability", "Constrained by her draught",
+		"Moored", "Aground", "Engaged in fishing", "Under way sailing", "status code reserved", "status code reserved", "status code reserved",
+		"status code reserved", "status code reserved", "AIS-SART is active", "Not defined"}
 
 	turn := ""
 	switch {
@@ -189,12 +229,13 @@ func PrintAisData(m aisMessageT123) {
 	}
 
 	fmt.Printf("=== Message Type %d ===\n", m.Type)
-	fmt.Printf(" Repeat    : %d\n", m.Repeat)
-	fmt.Printf(" MMSI      : %d\n", m.MMSI)
-	fmt.Printf(" Nav.Status: %s\n", status)
-	fmt.Printf(" Turn      : %s\n", turn)
-	fmt.Printf(" Speed     : %s\n", speed)
-	fmt.Printf(" Accuracy  : %s\n", accuracy)
+	fmt.Printf(" Repeat     : %d\n", m.Repeat)
+	fmt.Printf(" MMSI       : %d\n", m.MMSI)
+	fmt.Printf(" Nav.Status : %s\n", status[m.Status])
+	fmt.Printf(" Turn       : %s\n", turn)
+	fmt.Printf(" Speed      : %s\n", speed)
+	fmt.Printf(" Accuracy   : %s\n", accuracy)
+	fmt.Printf(" Coordinates: %s\n", CoordinatesDeg2Human(m.Lon, m.Lat))
 }
 
 func nmea183ChecksumCheck(sentence string) bool {
