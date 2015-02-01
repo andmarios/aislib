@@ -1,4 +1,4 @@
-package main
+package ais
 
 import (
 	"bufio"
@@ -13,7 +13,7 @@ import (
 
 // Please have a look at <http://catb.org/gpsd/AIVDM.html> and at <http://www.navcen.uscg.gov/?pageName=AISMessagesA>
 // This is the struct of AIS messages of types 1/2/3.
-type aisMessageT123 struct {
+type AisPositionMessage struct {
 	Type     uint8
 	Repeat   uint8
 	MMSI     uint32
@@ -39,7 +39,7 @@ func main() {
 
 		line := in.Text()
 
-		if nmea183ChecksumCheck(line) {
+		if Nmea183ChecksumCheck(line) {
 
 			tokens := strings.Split(line, ",")
 			if tokens[0] == "!AIVDM" && // Sentence is AIS data
@@ -47,7 +47,7 @@ func main() {
 				tokens[6][:1] == "0" {  // Message doesn't need weird padding (ok for messages 1/2/3)
 
 				//log.Println("Line length:", len(line), "Tokens:", len(tokens), "Payload:", tokens[5], "Checksum:", nmea183ChecksumCheck(line))
-				DecodeAisPosition(tokens[5])
+				PrintAisData(DecodeAisPosition(tokens[5]))
 			} else {
 				log.Println("There was an error with message:", line)
 			}
@@ -67,15 +67,22 @@ func decodeAisChar(character byte) byte {
 	return character
 }
 
-func DecodeAisPosition(payload string) {
+func AisMessageType(payload string) uint8 {
 	data := []byte(payload)
 
-	var m aisMessageT123
+	return decodeAisChar(data[0])
+}
+
+
+func DecodeAisPosition(payload string) AisPositionMessage {
+	data := []byte(payload)
+
+	var m AisPositionMessage
 	m.Type = decodeAisChar(data[0])
 
 	if m.Type != 1 && m.Type != 2 && m.Type != 3 {
 		log.Println("Message isn't Position Report.")
-		return
+		return m
 	}
 
 	m.Repeat = decodeAisChar(data[1]) >> 4
@@ -113,14 +120,10 @@ func DecodeAisPosition(payload string) {
 		int32(decodeAisChar(data[12])) << 15 + int32(decodeAisChar(data[13])) << 9 + int32(decodeAisChar(data[14])) >> 1 << 4)) / 16
 	m.Lat = float64((int32(decodeAisChar(data[14])) << 31 + int32(decodeAisChar(data[15])) << 25 +
 		int32(decodeAisChar(data[16])) << 19 + int32(decodeAisChar(data[17])) << 13 + int32(decodeAisChar(data[18])) << 7 + int32(decodeAisChar(data[19])) >> 4 << 5 )) / 32
-	//Degrees := int(m.Lon / 600000)
-	//log.Println("Lon:", Degrees, "*", m.Lon/10000 - 60 * float64(Degrees))
-	//Degrees = int(m.Lat / 600000)
-	//log.Println("Lat:", Degrees, "*", m.Lat/10000 - 60 * float64(Degrees))
 	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
 	//log.Println(CoordinatesDeg2Human(m.Lon, m.Lat))
 
-	PrintAisData(m)
+	return m
 
 }
 
@@ -188,7 +191,7 @@ func CoordinatesDeg2Human(degLon, degLat float64) string {
 	return coordinates
 }
 
-func PrintAisData(m aisMessageT123) {
+func PrintAisData(m AisPositionMessage) {
 
 	status := []string{"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability", "Constrained by her draught",
 		"Moored", "Aground", "Engaged in fishing", "Under way sailing", "status code reserved", "status code reserved", "status code reserved",
@@ -238,7 +241,7 @@ func PrintAisData(m aisMessageT123) {
 	fmt.Printf(" Coordinates: %s\n", CoordinatesDeg2Human(m.Lon, m.Lat))
 }
 
-func nmea183ChecksumCheck(sentence string) bool {
+func Nmea183ChecksumCheck(sentence string) bool {
 	length := len(sentence)
 
 	var csum []byte
