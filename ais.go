@@ -57,12 +57,12 @@ func DecodeAisPosition(payload string) AisPositionMessage {
 
 	m.MMSI = uint32(decodeAisChar(data[1])) << 28
 	m.MMSI = m.MMSI >> 2
-	m.MMSI += uint32(decodeAisChar(data[2])) << 20 + uint32(decodeAisChar(data[3])) << 14 + uint32(decodeAisChar(data[4])) << 8 + uint32(decodeAisChar(data[5])) << 2
+	m.MMSI += uint32(decodeAisChar(data[2])) << 20 | uint32(decodeAisChar(data[3])) << 14 | uint32(decodeAisChar(data[4])) << 8 | uint32(decodeAisChar(data[5])) << 2
 	m.MMSI += uint32(decodeAisChar(data[6])) >> 4
 
 	m.Status = ( decodeAisChar(data[6]) << 4 ) >> 4
 
-	m.Turn = float32(int8(decodeAisChar(data[7]) << 2 + decodeAisChar(data[8]) >> 4))
+	m.Turn = float32(int8(decodeAisChar(data[7]) << 2 | decodeAisChar(data[8]) >> 4))
 	if m.Turn != 0 && m.Turn <= 126 && m.Turn >= -126 {
 		sign := float32(1)
 		if math.Signbit(float64(m.Turn)) {
@@ -72,7 +72,7 @@ func DecodeAisPosition(payload string) AisPositionMessage {
 
 	}
 
-	m.Speed = float32(uint16(decodeAisChar(data[8])) << 12 >> 6 + uint16(decodeAisChar(data[9])))
+	m.Speed = float32(uint16(decodeAisChar(data[8])) << 12 >> 6 | uint16(decodeAisChar(data[9])))
 	if m.Speed < 1022 {
 		m.Speed = m.Speed / 10
 	}
@@ -84,10 +84,10 @@ func DecodeAisPosition(payload string) AisPositionMessage {
 		m.Accuracy = true
 	}
 
-	m.Lon = float64((int32(decodeAisChar(data[10])) << 27 + int32(decodeAisChar(data[11])) << 21 +
-		int32(decodeAisChar(data[12])) << 15 + int32(decodeAisChar(data[13])) << 9 + int32(decodeAisChar(data[14])) >> 1 << 4)) / 16
-	m.Lat = float64((int32(decodeAisChar(data[14])) << 31 + int32(decodeAisChar(data[15])) << 25 +
-		int32(decodeAisChar(data[16])) << 19 + int32(decodeAisChar(data[17])) << 13 + int32(decodeAisChar(data[18])) << 7 + int32(decodeAisChar(data[19])) >> 4 << 5 )) / 32
+	m.Lon = float64((int32(decodeAisChar(data[10])) << 27 | int32(decodeAisChar(data[11])) << 21 |
+		int32(decodeAisChar(data[12])) << 15 | int32(decodeAisChar(data[13])) << 9 | int32(decodeAisChar(data[14])) >> 1 << 4)) / 16
+	m.Lat = float64((int32(decodeAisChar(data[14])) << 31 | int32(decodeAisChar(data[15])) << 25 |
+		int32(decodeAisChar(data[16])) << 19 | int32(decodeAisChar(data[17])) << 13 | int32(decodeAisChar(data[18])) << 7 | int32(decodeAisChar(data[19])) >> 4 << 5 )) / 32
 	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
 
 	return m
