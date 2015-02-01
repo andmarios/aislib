@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
-	"code.andmarios.com/ais"
+	"projects.30ohm.com/mrsaccess/ais"
 )
 
 func main() {
