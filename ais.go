@@ -1,11 +1,11 @@
 package ais
 
 import (
-	"log"
 	"encoding/hex"
 	"math"
 	"fmt"
 	"strconv"
+	"errors"
 )
 
 // Please have a look at <http://catb.org/gpsd/AIVDM.html> and at <http://www.navcen.uscg.gov/?pageName=AISMessagesA>
@@ -23,7 +23,7 @@ type AisPositionMessage struct {
 	Course   float32 //course over ground - COG (sc U1)
 	Heading  uint16  // true heading - HDG
 	Second   uint8   // timestamp
-	Manuveur uint8   // maneuver indicator (enumerated)
+	Maneuver uint8   // maneuver indicator (enumerated)
 	RAIM     bool    // RAIM flag
 	Radio    uint32  // Radio status
 }
@@ -38,19 +38,18 @@ func decodeAisChar(character byte) byte {
 
 func AisMessageType(payload string) uint8 {
 	data := []byte(payload)
-
 	return decodeAisChar(data[0])
 }
 
-func DecodeAisPosition(payload string) AisPositionMessage {
+func DecodeAisPosition(payload string) (AisPositionMessage, error) {
 	data := []byte(payload)
 
 	var m AisPositionMessage
+
 	m.Type = decodeAisChar(data[0])
 
 	if m.Type != 1 && m.Type != 2 && m.Type != 3 {
-		log.Println("Message isn't Position Report.")
-		return m
+		return m, errors.New("Message isn't Position Report.")
 	}
 
 	m.Repeat = decodeAisChar(data[1]) >> 4
@@ -77,10 +76,8 @@ func DecodeAisPosition(payload string) AisPositionMessage {
 		m.Speed = m.Speed / 10
 	}
 
-	accuracy := decodeAisChar(data[10]) >> 5
-	if accuracy == 0 {
-		m.Accuracy = false
-	} else {
+	m.Accuracy = false
+	if decodeAisChar(data[10]) >> 5 == 1 {
 		m.Accuracy = true
 	}
 
@@ -90,8 +87,20 @@ func DecodeAisPosition(payload string) AisPositionMessage {
 		int32(decodeAisChar(data[16])) << 19 | int32(decodeAisChar(data[17])) << 13 | int32(decodeAisChar(data[18])) << 7 | int32(decodeAisChar(data[19])) >> 4 << 5 )) / 32
 	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
 
-	return m
+	m.Course = float32(uint16(decodeAisChar(data[19])) << 12 >> 4 | uint16(decodeAisChar(data[20])) << 2 | uint16(decodeAisChar(data[21])) >> 4) / 10
 
+	m.Heading = uint16(decodeAisChar(data[21])) << 12 >> 7 | uint16(decodeAisChar(data[22])) >> 1
+
+	m.Second = decodeAisChar(data[22]) << 7 >> 2 | decodeAisChar(data[23]) >> 1
+
+	m.Maneuver = decodeAisChar(data[23]) << 7 >> 6 | decodeAisChar(data[24]) >> 5
+
+	m.RAIM = false
+	if decodeAisChar(data[24]) << 6 >> 7 == 1 {
+		m.RAIM = true
+	}
+
+	return m, nil
 }
 
 func CoordinatesMin2Deg(minLon, minLat float64) (float64, float64) {
@@ -158,7 +167,7 @@ func CoordinatesDeg2Human(degLon, degLat float64) string {
 	return coordinates
 }
 
-func PrintAisData(m AisPositionMessage) {
+func PrintAisPositionData(m AisPositionMessage) string {
 
 	status := []string{"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability", "Constrained by her draught",
 		"Moored", "Aground", "Engaged in fishing", "Under way sailing", "status code reserved", "status code reserved", "status code reserved",
@@ -198,14 +207,28 @@ func PrintAisData(m AisPositionMessage) {
 		accuracy = "Low accuracy (>10m)"
 	}
 
-	fmt.Printf("=== Message Type %d ===\n", m.Type)
-	fmt.Printf(" Repeat     : %d\n", m.Repeat)
-	fmt.Printf(" MMSI       : %d\n", m.MMSI)
-	fmt.Printf(" Nav.Status : %s\n", status[m.Status])
-	fmt.Printf(" Turn       : %s\n", turn)
-	fmt.Printf(" Speed      : %s\n", speed)
-	fmt.Printf(" Accuracy   : %s\n", accuracy)
-	fmt.Printf(" Coordinates: %s\n", CoordinatesDeg2Human(m.Lon, m.Lat))
+	course := ""
+	switch {
+	case m.Course < 360:
+		course = fmt.Sprintf("%.1f°", m.Course)
+	case m.Course == 360:
+		course = fmt.Sprintf("not available")
+	case m.Course > 360:
+		course = fmt.Sprintf("please report this to developer")
+	}
+
+	message :=
+		fmt.Sprintf("=== Message Type %d ===\n", m.Type) +
+		fmt.Sprintf(" Repeat      : %d\n", m.Repeat) +
+		fmt.Sprintf(" MMSI        : %d\n", m.MMSI) +
+		fmt.Sprintf(" Nav.Status  : %s\n", status[m.Status]) +
+		fmt.Sprintf(" Turn (ROT)  : %s\n", turn) +
+		fmt.Sprintf(" Speed (SOG) : %s\n", speed) +
+		fmt.Sprintf(" Accuracy    : %s\n", accuracy) +
+		fmt.Sprintf(" Coordinates : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
+		fmt.Sprintf(" Course (COG): %s\n", course)
+
+	return message
 }
 
 func Nmea183ChecksumCheck(sentence string) bool {

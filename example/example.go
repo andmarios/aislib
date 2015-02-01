@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"projects.30ohm.com/mrsaccess/ais"
+	"fmt"
 )
 
 func main() {
@@ -24,7 +25,13 @@ func main() {
 				tokens[6][:1] == "0" {  // Message doesn't need weird padding (ok for messages 1/2/3)
 
 				//log.Println("Line length:", len(line), "Tokens:", len(tokens), "Payload:", tokens[5], "Checksum:", nmea183ChecksumCheck(line))
-				ais.PrintAisData(ais.DecodeAisPosition(tokens[5]))
+
+				message, err := ais.DecodeAisPosition(tokens[5])
+				if err != nil {
+					log.Println(err)
+				} else {
+					fmt.Println(ais.PrintAisPositionData(message))
+				}
 			} else {
 				log.Println("There was an error with message:", line)
 			}
