@@ -1,4 +1,4 @@
-// Package ais contains function to deal with AIS (Automatic Identification System) sentences —radio messages in AIVDM/AIVDO format).
+// Package ais provides functions and types to work with AIS (Automatic Identification System) sentences —radio messages in AIVDM/AIVDO format.
 package ais
 
 import (

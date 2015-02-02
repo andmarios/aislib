@@ -34,6 +34,12 @@ func TestAisPosition(t *testing.T) {
 	}
 }
 
+func BenchmarkAisPosition(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		DecodeAisPosition("38u<a<?PAA2>P:WfuAO9PW<P0PuQ")
+	}
+}
+
 func TestCoordinatesDeg2Human(t *testing.T) {
 	cases := []struct {
 		lon, lat float64
@@ -67,5 +73,11 @@ func TestGetReferenceTime(t *testing.T) {
 			fmt.Println("Want: ", want)
 			t.Errorf("GetReferenceTime(payload string)")
 		}
+	}
+}
+
+func BenchmarkGetReferenceTime(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetReferenceTime("4025;PAuho;N>0NJbfMRhNA00D3l")
 	}
 }
