@@ -1,3 +1,4 @@
+// Package ais contains function to deal with AIS (Automatic Identification System) sentences —radio messages in AIVDM/AIVDO format).
 package ais
 
 import (
@@ -9,8 +10,8 @@ import (
 	"time"
 )
 
+// Struct for AIS position messages (messages of type 1, 2 or 3).
 // Please have a look at <http://catb.org/gpsd/AIVDM.html> and at <http://www.navcen.uscg.gov/?pageName=AISMessagesA>
-// This is the struct of AIS messages of types 1/2/3.
 type AisPositionMessage struct {
 	Type     uint8
 	Repeat   uint8
@@ -37,11 +38,13 @@ func decodeAisChar(character byte) byte {
 	return character
 }
 
+// Function to return the type of an AIS message payload
 func AisMessageType(payload string) uint8 {
 	data := []byte(payload)
 	return decodeAisChar(data[0])
 }
 
+// Function to decode the payload of an AIS position message (type 1/2/3)
 func DecodeAisPosition(payload string) (AisPositionMessage, error) {
 	data := []byte(payload)
 	var m AisPositionMessage
@@ -103,6 +106,7 @@ func DecodeAisPosition(payload string) (AisPositionMessage, error) {
 	return m, nil
 }
 
+// This function takes the payload of an AIS Base Station message (type 4) and returns the time data of it.
 func GetReferenceTime(payload string) (time.Time, error) {
 	data := []byte(payload)
 
@@ -129,6 +133,8 @@ func GetReferenceTime(payload string) (time.Time, error) {
 	return t, nil
 }
 
+// This function takes coordinates (lon, lat) in decimal minutes (×10^4) and returns them in decimal degrees.
+// AIS data use decimal minutes but decimal degrees (DD) is a more universal format and easier to handle.
 func CoordinatesMin2Deg(minLon, minLat float64) (float64, float64) {
 	lonSign := 1.0
 	latSign := 1.0
@@ -153,6 +159,7 @@ func CoordinatesMin2Deg(minLon, minLat float64) (float64, float64) {
 	return lonSign * lon, latSign * lat
 }
 
+// This function takes coordinates (lon, lat) in decimal degrees (DD), formats them as degrees minutes and returns them as string.
 func CoordinatesDeg2Human(degLon, degLat float64) string {
 	lonSign := 1.0
 	latSign := 1.0
@@ -192,6 +199,8 @@ func CoordinatesDeg2Human(degLon, degLat float64) string {
 	return coordinates
 }
 
+// This function prints the data of a AIS position message.
+// Its main use is to act as a guide for any developer wishing to correclty parse an AIS position message.
 func PrintAisPositionData(m AisPositionMessage) string {
 
 	status := []string{"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability", "Constrained by her draught",
@@ -284,6 +293,8 @@ func PrintAisPositionData(m AisPositionMessage) string {
 	return message
 }
 
+// This function performs a checksum check for NMEA183 sentences.
+// AIS messages are NMEA183 encoded.
 func Nmea183ChecksumCheck(sentence string) bool {
 	length := len(sentence)
 
