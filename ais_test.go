@@ -58,6 +58,11 @@ func TestCoordinatesDeg2Human(t *testing.T) {
 	}
 }
 
+func ExampleCoordinatesDeg2Human() {
+	fmt.Println(CoordinatesDeg2Human(-3.56725, 53.84251666666667))
+	// Output:   3°34.0350'W  53°50.5510N
+}
+
 func TestGetReferenceTime(t *testing.T) {
 	cases := []struct {
 		payload, reference string
