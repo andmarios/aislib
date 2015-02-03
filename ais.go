@@ -55,7 +55,7 @@ func decodeAisChar(character byte) byte {
 
 // Function to return the type of an AIS message payload
 func MessageType(payload string) uint8 {
-	data := []byte(payload)
+	data := []byte(payload[:1])
 	return decodeAisChar(data[0])
 }
 
@@ -66,31 +66,30 @@ func MessageType(payload string) uint8 {
 // If the in channel is closed, then it sends a message with type 255 at the out channel.
 // Your function can check for this message to know when it is safe to exit the program.
 func Router(in chan string, out chan Message, failed chan FailedSentence) {
-	count, ccount := 0, 0
+	count, ccount, padding := 0, 0, 0
 	size, id := "0", "0"
 	payload := ""
 	var cache [5]string
 	var err error
 	aisIdentifiers := map[string]bool{
-		"AB": true, "AD": true, "AI": true, "AN": true, "AR": true,
-		"AS": true, "AT": true, "AX": true, "BS": true, "SA": true,
+		"ABVD": true, "ADVD": true, "AIVD": true, "ANVD": true, "ARVD": true,
+		"ASVD": true, "ATVD": true, "AXVD": true, "BSVD": true, "SAVD": true,
 	}
 	for sentence := range in {
-		tokens := strings.Split(sentence, ",")
+		tokens := strings.Split(sentence, ",") // I think this takes the major portion of time for this function (after benchmarking)
 
 		if !Nmea183ChecksumCheck(sentence) { // Checksum check
 			failed <- FailedSentence{sentence, "Checksum failed"}
 			continue
 		}
 
-		if !aisIdentifiers[tokens[0][1:3]] || // Check for valid AIS identifier
-			tokens[0][3:6] != "VDO" && tokens[0][3:6] != "VDM" {
+		if !aisIdentifiers[tokens[0][1:5]] { // Check for valid AIS identifier
 			failed <- FailedSentence{sentence, "Sentence isn't AIVDM/AIVDO"}
 			continue
 		}
 
 		if tokens[1] == "1" { // One sentence message, process it immediately
-			padding, _ := strconv.Atoi(tokens[6][:1])
+			padding, _ = strconv.Atoi(tokens[6][:1])
 			out <- Message{MessageType(tokens[5]), tokens[5], uint8(padding)}
 		} else { // Message spans across sentences.
 			ccount, err = strconv.Atoi(tokens[2])
@@ -114,7 +113,7 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 				size = tokens[1]
 				id = tokens[3]
 			} else if size == tokens[2] && count == ccount { // Last message in sequence, send it and clean up.
-				padding, _ := strconv.Atoi(tokens[6][:1])
+				padding, _ = strconv.Atoi(tokens[6][:1])
 				out <- Message{MessageType(payload), payload, uint8(padding)}
 				count = 0
 				payload = ""
@@ -378,7 +377,6 @@ func PrintPositionData(m PositionMessage) string {
 func Nmea183ChecksumCheck(sentence string) bool {
 	length := len(sentence)
 
-	var csum []byte
 	csum, err := hex.DecodeString(sentence[length-2:])
 
 	if err != nil {
@@ -387,6 +385,7 @@ func Nmea183ChecksumCheck(sentence string) bool {
 
 	bline := []byte(sentence[1 : length-3])
 	ccsum := bline[0]
+
 	for i := 1; i < len(bline); i++ {
 		ccsum ^= bline[i]
 	}
