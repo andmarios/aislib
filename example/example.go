@@ -26,7 +26,7 @@ func main() {
 		for {
 			select {
 			case message = <-receive:
-				if message.Type >= 1 && message.Type <=3 {
+				if message.Type >= 1 && message.Type <= 3 {
 					positionMessage, _ := ais.DecodePositionMessage(message.Payload)
 					fmt.Println(ais.PrintPositionData(positionMessage))
 				} else if message.Type == 4 {
@@ -39,10 +39,10 @@ func main() {
 						fmt.Println()
 					}
 				} else if message.Type == 255 {
-					done<-true
+					done <- true
 				} else {
-						fmt.Printf("=== Message Type %2d ===\n", message.Type)
-						fmt.Printf(" Unsupported type \n\n")
+					fmt.Printf("=== Message Type %2d ===\n", message.Type)
+					fmt.Printf(" Unsupported type \n\n")
 				}
 			case problematic = <-failed:
 				log.Println(problematic)
@@ -50,9 +50,8 @@ func main() {
 		}
 	}()
 
-
 	for in.Scan() {
-		send<-in.Text()
+		send <- in.Text()
 	}
 	close(send)
 	<-done

@@ -71,19 +71,19 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 	payload := ""
 	var cache [5]string
 	var err error
-	aisIdentifiers := map[string]bool {
+	aisIdentifiers := map[string]bool{
 		"AB": true, "AD": true, "AI": true, "AN": true, "AR": true,
 		"AS": true, "AT": true, "AX": true, "BS": true, "SA": true,
 	}
 	for sentence := range in {
 		tokens := strings.Split(sentence, ",")
 
-		if ! Nmea183ChecksumCheck(sentence) { // Checksum check
+		if !Nmea183ChecksumCheck(sentence) { // Checksum check
 			failed <- FailedSentence{sentence, "Checksum failed"}
 			continue
 		}
 
-		if ! aisIdentifiers[tokens[0][1:3]]  ||  // Check for valid AIS identifier
+		if !aisIdentifiers[tokens[0][1:3]] || // Check for valid AIS identifier
 			tokens[0][3:6] != "VDO" && tokens[0][3:6] != "VDM" {
 			failed <- FailedSentence{sentence, "Sentence isn't AIVDM/AIVDO"}
 			continue
@@ -95,13 +95,13 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 		} else { // Message spans across sentences.
 			ccount, err = strconv.Atoi(tokens[2])
 			if err != nil {
-				failed <-FailedSentence{sentence, "HERE " + tokens[2]}
+				failed <- FailedSentence{sentence, "HERE " + tokens[2]}
 				continue
 			}
-			if ccount != count + 1 || // If there are sentences with wrong sequence number in cache send them as failed
+			if ccount != count+1 || // If there are sentences with wrong sequence number in cache send them as failed
 				tokens[3] != id && count != 0 || // If there are sentences with different sequence id in cache , send old parts as failed
 				tokens[1] != size && count != 0 { // If there messages with wrogn size in cache, send them as failed
-				for i := 0; i <=count; i++ {
+				for i := 0; i <= count; i++ {
 					failed <- FailedSentence{cache[i], "Incomplete/out of order span sentence"}
 				}
 				count = 0
@@ -114,10 +114,10 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 				size = tokens[1]
 				id = tokens[3]
 			} else if size == tokens[2] && count == ccount { // Last message in sequence, send it and clean up.
-					padding, _ := strconv.Atoi(tokens[6][:1])
-					out <- Message{MessageType(payload), payload, uint8(padding)}
-					count = 0
-					payload = ""
+				padding, _ := strconv.Atoi(tokens[6][:1])
+				out <- Message{MessageType(payload), payload, uint8(padding)}
+				count = 0
+				payload = ""
 			}
 		}
 	}

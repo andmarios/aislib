@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestAisPosition(t *testing.T) {
+func TestDecodePositionMessage(t *testing.T) {
 	cases := []struct {
 		payload string
 		want    PositionMessage
@@ -34,7 +34,7 @@ func TestAisPosition(t *testing.T) {
 	}
 }
 
-func BenchmarkAisPosition(b *testing.B) {
+func BenchmarkDecodePositionMessage(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		DecodePositionMessage("38u<a<?PAA2>P:WfuAO9PW<P0PuQ")
 	}
@@ -84,5 +84,52 @@ func TestGetReferenceTime(t *testing.T) {
 func BenchmarkGetReferenceTime(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		GetReferenceTime("4025;PAuho;N>0NJbfMRhNA00D3l")
+	}
+}
+
+func TestRouter(t *testing.T) {
+	cases := []struct {
+		message  Message
+		sentence []string
+	}{
+		{
+			Message{3, "38u<a<?PAA2>P:WfuAO9PW<P0PuQ", 0},
+			[]string{"!AIVDM,1,1,,B,38u<a<?PAA2>P:WfuAO9PW<P0PuQ,0*6F"},
+		},
+		{
+			Message{5, "533iFNT00003W;3G;384iT<T400000000000001?88?73v0ik0RC1H11H30H51CU0E2CkP0", 2},
+			[]string{"!AIVDM,2,1,5,A,533iFNT00003W;3G;384iT<T400000000000001?88?73v0ik0RC1H11H30H,0*44", "!AIVDM,2,2,5,A,51CU0E2CkP0,2*0C"},
+		},
+	}
+
+	send := make(chan string)
+	receive := make(chan Message, 1024)
+	failed := make(chan FailedSentence, 1024)
+
+	go Router(send, receive, failed)
+
+	for _, c := range cases {
+		for _, m := range c.sentence {
+			send <- m
+		}
+		got := <-receive
+		if got != c.message {
+			fmt.Println("Got : ", got)
+			fmt.Println("Want: ", c.message)
+			t.Errorf("Router(in chan string, out chan Message, failed chan FailedSentence)")
+		}
+	}
+}
+
+func BenchmarkRouter(b *testing.B) {
+	send := make(chan string)
+	receive := make(chan Message, 1024)
+	failed := make(chan FailedSentence, 1024)
+
+	go Router(send, receive, failed)
+
+	for i := 0; i < b.N; i++ {
+		send <- "!AIVDM,1,1,,B,38u<a<?PAA2>P:WfuAO9PW<P0PuQ,0*6F"
+		<-receive
 	}
 }
