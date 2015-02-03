@@ -9,34 +9,34 @@ import (
 func TestAisPosition(t *testing.T) {
 	cases := []struct {
 		payload string
-		want    AisPositionMessage
+		want    PositionMessage
 	}{
 		{
 			"38u<a<?PAA2>P:WfuAO9PW<P0PuQ",
-			AisPositionMessage{Type: 3, Repeat: 0, MMSI: 601041200, Status: 15, Turn: -127, Speed: 8.1, Accuracy: false, Lon: 31.130165, Lat: -29.784113333333334, Course: 243.4, Heading: 230, Second: 16, Maneuver: 0, RAIM: false},
+			PositionMessage{Type: 3, Repeat: 0, MMSI: 601041200, Status: 15, Turn: -127, Speed: 8.1, Accuracy: false, Lon: 31.130165, Lat: -29.784113333333334, Course: 243.4, Heading: 230, Second: 16, Maneuver: 0, RAIM: false},
 		},
 		{
 			"13P:v?h009Ogbr4NkiITkU>L089D",
-			AisPositionMessage{Type: 1, Repeat: 0, MMSI: 235060799, Status: 0, Turn: 0, Speed: 0.9, Accuracy: false, Lon: -3.56725, Lat: 53.84251666666667, Course: 123, Heading: 167, Second: 14, Maneuver: 0, RAIM: false},
+			PositionMessage{Type: 1, Repeat: 0, MMSI: 235060799, Status: 0, Turn: 0, Speed: 0.9, Accuracy: false, Lon: -3.56725, Lat: 53.84251666666667, Course: 123, Heading: 167, Second: 14, Maneuver: 0, RAIM: false},
 		},
 		{
 			"13n@oD0PB@0IRqvQj@W;EppH088t19uvPT",
-			AisPositionMessage{Type: 1, Repeat: 0, MMSI: 258226000, Status: 0, Turn: -127, Speed: 14.4, Accuracy: false, Lon: 5.580478333333334, Lat: 59.0441, Course: 290.3, Heading: 284, Second: 12, Maneuver: 0, RAIM: false},
+			PositionMessage{Type: 1, Repeat: 0, MMSI: 258226000, Status: 0, Turn: -127, Speed: 14.4, Accuracy: false, Lon: 5.580478333333334, Lat: 59.0441, Course: 290.3, Heading: 284, Second: 12, Maneuver: 0, RAIM: false},
 		},
 	}
 	for _, c := range cases {
-		got, _ := DecodeAisPosition(c.payload)
+		got, _ := DecodePositionMessage(c.payload)
 		if got != c.want {
 			fmt.Println("Got : ", got)
 			fmt.Println("Want: ", c.want)
-			t.Errorf("DecodeAisPosition(payload string)")
+			t.Errorf("DecodePositionMessage(payload string)")
 		}
 	}
 }
 
 func BenchmarkAisPosition(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		DecodeAisPosition("38u<a<?PAA2>P:WfuAO9PW<P0PuQ")
+		DecodePositionMessage("38u<a<?PAA2>P:WfuAO9PW<P0PuQ")
 	}
 }
 

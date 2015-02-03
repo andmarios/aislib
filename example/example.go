@@ -6,36 +6,31 @@ import (
 	"log"
 	"os"
 	"projects.30ohm.com/mrsaccess/ais"
-	"strings"
-	//	"time"
 )
 
 func main() {
 	in := bufio.NewScanner(os.Stdin)
 	in.Split(bufio.ScanLines)
 
-	for in.Scan() {
+	send := make(chan string, 1024)
+	receive := make(chan ais.Message, 1024)
+	failed := make(chan ais.FailedSentence, 1024)
 
-		line := in.Text()
+	done := make(chan bool)
 
-		if ais.Nmea183ChecksumCheck(line) {
+	go ais.Router(send, receive, failed)
 
-			tokens := strings.Split(line, ",")
-			if tokens[0] == "!AIVDM" && // Sentence is ais data
-				tokens[1] == "1" && // Payload doesn't span across two sentences (ok for messages 1/2/3)
-				tokens[6][:1] == "0" { // Message doesn't need weird padding (ok for messages 1/2/3)
-
-				messageType := ais.AisMessageType(tokens[5])
-				if messageType >= 1 && messageType <= 3 {
-
-					message, err := ais.DecodeAisPosition(tokens[5])
-					if err != nil {
-						log.Println(err)
-					} else {
-						fmt.Println(ais.PrintAisPositionData(message))
-					}
-				} else if messageType == 4 {
-					t, err := ais.GetReferenceTime(tokens[5])
+	go func() {
+		var message ais.Message
+		var problematic ais.FailedSentence
+		for {
+			select {
+			case message = <-receive:
+				if message.Type >= 1 && message.Type <=3 {
+					positionMessage, _ := ais.DecodePositionMessage(message.Payload)
+					fmt.Println(ais.PrintPositionData(positionMessage))
+				} else if message.Type == 4 {
+					t, err := ais.GetReferenceTime(message.Payload)
 					if err != nil {
 						log.Println(err)
 					} else {
@@ -43,14 +38,22 @@ func main() {
 						fmt.Println(t)
 						fmt.Println()
 					}
+				} else if message.Type == 255 {
+					done<-true
+				} else {
+						fmt.Printf("=== Message Type %2d ===\n", message.Type)
+						fmt.Printf(" Unsupported type \n\n")
 				}
-			} else {
-				log.Println("There was an error with message:", line)
+			case problematic = <-failed:
+				log.Println(problematic)
 			}
-
-		} else {
-			log.Println("Checksum failed:", line)
 		}
-	}
+	}()
 
+
+	for in.Scan() {
+		send<-in.Text()
+	}
+	close(send)
+	<-done
 }
