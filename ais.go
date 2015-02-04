@@ -1,4 +1,7 @@
-// Package ais provides functions and types to work with AIS (Automatic Identification System) sentences —radio messages in AIVDM/AIVDO format.
+// ais provides functions and types to work with AIS (Automatic Identification System) sentences (radio messages) and messages in AIVDM/AIVDO format.
+//
+// An AIS sentence is one line, it is the actual radio message.
+// An AIS message is the payload that is carried by one or more consecutive AIS sentences.
 package ais
 
 import (
@@ -11,21 +14,21 @@ import (
 	"time"
 )
 
-// Struct for AIS messages, including only information useful for decoding: Type, Payload, Padding Bits
-// An AisMessage should come after processing one or more AIS radio sentences (checksum check, concatenate payloads spanning across sentences, etc).
+// A Message stores the important properties of a AIS message, including only information useful for decoding: Type, Payload, Padding Bits
+// A Message should come after processing one or more AIS radio sentences (checksum check, concatenate payloads spanning across sentences, etc).
 type Message struct {
 	Type    uint8
 	Payload string
 	Padding uint8
 }
 
-// Struct for returning AIS sentences that failed checks (e.g failed checksum).
+// FailedSentence includes an AIS sentence that failed to process (e.g wrong checksum) and the reason it failed.
 type FailedSentence struct {
 	Sentence string
 	Issue    string
 }
 
-// Struct for AIS position messages (messages of type 1, 2 or 3).
+// A PositionMessage is a decoded AIS position message (messages of type 1, 2 or 3).
 // Please have a look at <http://catb.org/gpsd/AIVDM.html> and at <http://www.navcen.uscg.gov/?pageName=AISMessagesA>
 type PositionMessage struct {
 	Type     uint8
@@ -53,13 +56,13 @@ func decodeAisChar(character byte) byte {
 	return character
 }
 
-// Function to return the type of an AIS message payload
+// MessageType returns the type of an AIS message
 func MessageType(payload string) uint8 {
 	data := []byte(payload[:1])
 	return decodeAisChar(data[0])
 }
 
-// This function accepts AIS radio sentences and process them. It checks their checksum,
+// Router accepts AIS radio sentences and process them. It checks their checksum,
 // and AIS identifiers. If they are valid it tries to assemble the payload if it spans
 // on multiple sentences. Upon success it returns the AIS Message at the out channel.
 // Failed sentences go to the err channel.
@@ -123,7 +126,7 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 	out <- Message{255, "", 0}
 }
 
-// Function to decode the payload of an AIS position message (type 1/2/3)
+// DecodePositionMessage decodes [the payload of] an AIS position message (type 1/2/3)
 func DecodePositionMessage(payload string) (PositionMessage, error) {
 	data := []byte(payload)
 	var m PositionMessage
@@ -185,7 +188,7 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 	return m, nil
 }
 
-// This function takes the payload of an AIS Base Station message (type 4) and returns the time data of it.
+// GetReferenceTime takes [the payload of] an AIS Base Station message (type 4) and returns the time data of it.
 func GetReferenceTime(payload string) (time.Time, error) {
 	data := []byte(payload)
 
@@ -212,8 +215,8 @@ func GetReferenceTime(payload string) (time.Time, error) {
 	return t, nil
 }
 
-// This function takes coordinates (lon, lat) in decimal minutes (×10^4) and returns them in decimal degrees.
-// AIS data use decimal minutes but decimal degrees (DD) is a more universal format and easier to handle.
+// CoordinatesMin2Deg translates coordinates (lon, lat) in decimal minutes (×10^4) to decimal degrees.
+// AIS data use decimal minutes but decimal degrees (DD) is a more universal format and easier to handle. Almost every third party asks for this format.
 func CoordinatesMin2Deg(minLon, minLat float64) (float64, float64) {
 	lonSign := 1.0
 	latSign := 1.0
@@ -238,7 +241,8 @@ func CoordinatesMin2Deg(minLon, minLat float64) (float64, float64) {
 	return lonSign * lon, latSign * lat
 }
 
-// This function takes coordinates (lon, lat) in decimal degrees (DD), formats them as degrees minutes and returns them as string.
+// CoordinatesDeg2Human takes coordinates (lon, lat) in decimal degrees (DD),
+// formats them as degrees minutes and returns them as string.
 func CoordinatesDeg2Human(degLon, degLat float64) string {
 	lonSign := 1.0
 	latSign := 1.0
@@ -278,8 +282,10 @@ func CoordinatesDeg2Human(degLon, degLat float64) string {
 	return coordinates
 }
 
-// This function prints the data of a AIS position message.
-// Its main use is to act as a guide for any developer wishing to correclty parse an AIS position message.
+// PrintPositionData returns a formatted string with the detailed data of a AIS position message.
+// Its main use is to act as a guide for any developer wishing to correctly parse an AIS position message,
+// since some parts of a message are enumareted, and other parts although they mainly are numeric values,
+// for certain values they can have a non-numeric meaning.
 func PrintPositionData(m PositionMessage) string {
 
 	status := []string{"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability", "Constrained by her draught",
@@ -299,7 +305,7 @@ func PrintPositionData(m PositionMessage) string {
 	case m.Turn > 0 && m.Turn < 127:
 		turn = "right at " + strconv.FormatFloat(float64(m.Turn), 'f', 3, 32)
 	case m.Turn < 0 && m.Turn > -127:
-		turn = "left at " + strconv.FormatFloat(float64(m.Turn), 'f', 3, 32)
+		turn = "left at " + strconv.FormatFloat(float64(-m.Turn), 'f', 3, 32)
 	}
 
 	speed := ""
@@ -372,7 +378,7 @@ func PrintPositionData(m PositionMessage) string {
 	return message
 }
 
-// This function performs a checksum check for NMEA183 sentences.
+// Nmea183ChecksumCheck performs a checksum check for NMEA183 sentences.
 // AIS messages are NMEA183 encoded.
 func Nmea183ChecksumCheck(sentence string) bool {
 	length := len(sentence)
