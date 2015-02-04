@@ -1,4 +1,5 @@
-// Package ais provides functions and types to work with AIS (Automatic Identification System) sentences (radio messages) and messages in AIVDM/AIVDO format.
+// Package ais provides functions and types to work with AIS (Automatic Identification System)
+// sentences (radio messages) and messages in AIVDM/AIVDO format.
 //
 // An AIS sentence is one line, it is the actual radio message.
 // An AIS message is the payload that is carried by one or more consecutive AIS sentences.
@@ -14,22 +15,26 @@ import (
 	"time"
 )
 
-// A Message stores the important properties of a AIS message, including only information useful for decoding: Type, Payload, Padding Bits
-// A Message should come after processing one or more AIS radio sentences (checksum check, concatenate payloads spanning across sentences, etc).
+// A Message stores the important properties of a AIS message, including only information useful
+// for decoding: Type, Payload, Padding Bits
+// A Message should come after processing one or more AIS radio sentences (checksum check,
+// concatenate payloads spanning across sentences, etc).
 type Message struct {
 	Type    uint8
 	Payload string
 	Padding uint8
 }
 
-// FailedSentence includes an AIS sentence that failed to process (e.g wrong checksum) and the reason it failed.
+// FailedSentence includes an AIS sentence that failed to process (e.g wrong checksum) and the reason
+// it failed.
 type FailedSentence struct {
 	Sentence string
 	Issue    string
 }
 
 // A PositionMessage is a decoded AIS position message (messages of type 1, 2 or 3).
-// Please have a look at <http://catb.org/gpsd/AIVDM.html> and at <http://www.navcen.uscg.gov/?pageName=AISMessagesA>
+// Please have a look at http://catb.org/gpsd/AIVDM.html and at
+// http://www.navcen.uscg.gov/?pageName=AISMessagesA
 type PositionMessage struct {
 	Type     uint8
 	Repeat   uint8
@@ -100,7 +105,7 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 				failed <- FailedSentence{sentence, "HERE " + tokens[2]}
 				continue
 			}
-			if ccount != count+1 || // If there are sentences with wrong sequence number in cache send them as failed
+			if ccount != count+1 || // If there are sentences with wrong seq.number in cache send them as failed
 				tokens[3] != id && count != 0 || // If there are sentences with different sequence id in cache , send old parts as failed
 				tokens[1] != size && count != 0 { // If there messages with wrogn size in cache, send them as failed
 				for i := 0; i <= count; i++ {
@@ -141,7 +146,7 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 
 	m.MMSI = uint32(decodeAisChar(data[1]))<<28>>2 | uint32(decodeAisChar(data[2]))<<20 |
 		uint32(decodeAisChar(data[3]))<<14 | uint32(decodeAisChar(data[4]))<<8 |
-		uint32(decodeAisChar(data[5]))<<2 | uint32(decodeAisChar(data[6])) >> 4
+		uint32(decodeAisChar(data[5]))<<2 | uint32(decodeAisChar(data[6]))>>4
 
 	m.Status = (decodeAisChar(data[6]) << 4) >> 4
 
@@ -166,12 +171,15 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 	}
 
 	m.Lon = float64((int32(decodeAisChar(data[10]))<<27 | int32(decodeAisChar(data[11]))<<21 |
-		int32(decodeAisChar(data[12]))<<15 | int32(decodeAisChar(data[13]))<<9 | int32(decodeAisChar(data[14]))>>1<<4)) / 16
+		int32(decodeAisChar(data[12]))<<15 | int32(decodeAisChar(data[13]))<<9 |
+		int32(decodeAisChar(data[14]))>>1<<4)) / 16
 	m.Lat = float64((int32(decodeAisChar(data[14]))<<31 | int32(decodeAisChar(data[15]))<<25 |
-		int32(decodeAisChar(data[16]))<<19 | int32(decodeAisChar(data[17]))<<13 | int32(decodeAisChar(data[18]))<<7 | int32(decodeAisChar(data[19]))>>4<<5)) / 32
+		int32(decodeAisChar(data[16]))<<19 | int32(decodeAisChar(data[17]))<<13 |
+		int32(decodeAisChar(data[18]))<<7 | int32(decodeAisChar(data[19]))>>4<<5)) / 32
 	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
 
-	m.Course = float32(uint16(decodeAisChar(data[19]))<<12>>4|uint16(decodeAisChar(data[20]))<<2|uint16(decodeAisChar(data[21]))>>4) / 10
+	m.Course = float32(uint16(decodeAisChar(data[19]))<<12>>4|uint16(decodeAisChar(data[20]))<<2|
+		uint16(decodeAisChar(data[21]))>>4) / 10
 
 	m.Heading = uint16(decodeAisChar(data[21]))<<12>>7 | uint16(decodeAisChar(data[22]))>>1
 
@@ -187,11 +195,13 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 	return m, nil
 }
 
-// GetReferenceTime takes [the payload of] an AIS Base Station message (type 4) and returns the time data of it.
+// GetReferenceTime takes [the payload of] an AIS Base Station message (type 4)
+// and returns the time data of it.
 func GetReferenceTime(payload string) (time.Time, error) {
 	data := []byte(payload)
 
-	year := uint16(decodeAisChar(data[6]))<<12>>2 | uint16(decodeAisChar(data[7]))<<4 | uint16(decodeAisChar(data[8]))>>2
+	year := uint16(decodeAisChar(data[6]))<<12>>2 | uint16(decodeAisChar(data[7]))<<4 |
+		uint16(decodeAisChar(data[8]))>>2
 
 	if year == 0 {
 		var t time.Time
@@ -215,7 +225,8 @@ func GetReferenceTime(payload string) (time.Time, error) {
 }
 
 // CoordinatesMin2Deg translates coordinates (lon, lat) in decimal minutes (×10^4) to decimal degrees.
-// AIS data use decimal minutes but decimal degrees (DD) is a more universal format and easier to handle. Almost every third party asks for this format.
+// AIS data use decimal minutes but decimal degrees (DD) is a more universal format and easier to
+// handle. Almost every third party asks for this format.
 func CoordinatesMin2Deg(minLon, minLat float64) (float64, float64) {
 	lonSign := 1.0
 	latSign := 1.0
@@ -287,9 +298,12 @@ func CoordinatesDeg2Human(degLon, degLat float64) string {
 // for certain values they can have a non-numeric meaning.
 func PrintPositionData(m PositionMessage) string {
 
-	status := []string{"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability", "Constrained by her draught",
-		"Moored", "Aground", "Engaged in fishing", "Under way sailing", "status code reserved", "status code reserved", "status code reserved",
-		"status code reserved", "status code reserved", "AIS-SART is active", "Not defined"}
+	status := []string{
+		"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability",
+		"Constrained by her draught", "Moored", "Aground", "Engaged in fishing", "Under way sailing",
+		"status code reserved", "status code reserved", "status code reserved",
+		"status code reserved", "status code reserved", "AIS-SART is active", "Not defined",
+	}
 
 	turn := ""
 	switch {
