@@ -3,9 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/marine-travel/marine-ais"
 	"log"
 	"os"
-	"projects.30ohm.com/mrsaccess/ais"
 )
 
 func main() {

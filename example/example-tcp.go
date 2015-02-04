@@ -5,10 +5,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/marine-travel/marine-ais"
 	"log"
 	"net"
 	"net/http"
-	"projects.30ohm.com/mrsaccess/ais"
 	"time"
 )
 
