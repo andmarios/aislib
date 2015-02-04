@@ -65,9 +65,13 @@ func main() {
 				jsonBuf.WriteString(",")
 			}
 			length := len(jsonBuf.String())
-			serveJson = "[" + jsonBuf.String()[:length-1] + "]"
-			jsonBuf.Reset()
-			fmt.Println(len(serveJson))
+			if length > 10 {
+				serveJson = "[" + jsonBuf.String()[:length-1] + "]"
+				jsonBuf.Reset()
+				fmt.Println(len(serveJson))
+			} else {
+				serveJson = "[]"
+			}
 		}
 	}()
 

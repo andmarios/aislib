@@ -30,6 +30,18 @@
      #info div p {
        font-size:14px;
        color:#333;
+      }
+     ul {
+       list-style-type: none;
+       margin: 0;
+       padding: 0;
+       overflow: hidden;
+       background-color: #375471;
+     }
+     li {
+      float: left;
+      margin: 2px;
+      padding: 2px;
      }
     </style>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js">
@@ -39,20 +51,25 @@
     </script>
     <script type="text/javascript">
      Map=null;
-     CenterLat=45.0;
-     CenterLon=9.0;
+     CenterLat=55.0;
+     CenterLon=10.0;
      Planes={};
      NumPlanes = 0;
      Selected=null
 
      function getIconForPlane(plane) {
-       var r = 255, g = 255, b = 0;
+       var color = 'yellow';
+       if ( plane.Data.Speed == 0 ) {
+         color = 'orange';
+       } else if ( plane.Data.Speed > 7 ) {
+         color = '#99FF33';
+       }
        var selected = (Selected == plane.Data.MMSI);
        return {
          strokeWeight: (selected ? 2 : 1),
          path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
          scale: 5,
-         fillColor: 'rgb('+r+','+g+','+b+')',
+         fillColor: color,
          fillOpacity: 0.9,
          rotation: plane.Data.Heading
        };
@@ -158,6 +175,9 @@
     </script>
   </head>
   <body onload="initialize()">
+    <ul>
+      <li><a href="http://www.marine.travel"><img src="http://www.marine.travel/images/logo-beta.png" style="height:30px"></a></li>
+    </ul>
     <div id="map_canvas" style="width:80%; height:100%"></div>
     <div id="info">
       <div>
