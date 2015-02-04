@@ -11,3 +11,7 @@ Or with live data:
 Or with a sentence:
 
     echo '!AIVDM,1,1,,A,14eGrSPP00ncMJTO5C6aBwvP2D0?,0*7A' | go run example.go
+
+`example-tcp.go` reads live NMEA data and serves them at <http://localhost:8080>
+
+    go run example-tcp.go

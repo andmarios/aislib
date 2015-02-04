@@ -8,12 +8,12 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"time"
 	"projects.30ohm.com/mrsaccess/ais"
+	"time"
 )
 
 // Here are saved as JSON the ships seen in the last 5 seconds.
-var serveJson string
+var serveJSON string
 
 type shipData struct {
 	Data  ais.PositionMessage
@@ -45,13 +45,13 @@ func main() {
 				}
 			case problematic = <-failed:
 				log.Println(problematic)
-			case _ = <- proceed: // Unbuffered channel used for synchronization (as mutex for [seen])
-				<- proceed
+			case _ = <-proceed: // Unbuffered channel used for synchronization (as mutex for [seen])
+				<-proceed
 			}
 		}
 	}()
 
-	// Create a function that every five seconds refreshes [serveJson] with new data
+	// Create a function that every five seconds refreshes [serveJSON] with new data
 	go func() {
 		var jsonBuf bytes.Buffer
 		for _ = range time.Tick(5 * time.Second) {
@@ -66,11 +66,11 @@ func main() {
 			}
 			length := len(jsonBuf.String())
 			if length > 10 {
-				serveJson = "[" + jsonBuf.String()[:length-1] + "]"
+				serveJSON = "[" + jsonBuf.String()[:length-1] + "]"
 				jsonBuf.Reset()
-				fmt.Println(len(serveJson))
+				fmt.Println(len(serveJSON))
 			} else {
-				serveJson = "[]"
+				serveJSON = "[]"
 			}
 		}
 	}()
@@ -92,7 +92,7 @@ func main() {
 	connbuf := bufio.NewScanner(conn)
 	connbuf.Split(bufio.ScanLines)
 	go func() {
-		for connbuf.Scan () {
+		for connbuf.Scan() {
 			send <- connbuf.Text()
 		}
 	}()
@@ -101,13 +101,8 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir(".")))
 	http.ListenAndServe(":8080", nil)
 
-
-
 }
 
-func dataHandler(w http.ResponseWriter, r* http.Request) {
-	fmt.Fprintf(w, "%s", serveJson)
+func dataHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "%s", serveJSON)
 }
-
-
-
