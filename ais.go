@@ -202,20 +202,15 @@ func GetReferenceTime(payload string) (time.Time, error) {
 
 	year := uint16(decodeAisChar(data[6]))<<12>>2 | uint16(decodeAisChar(data[7]))<<4 |
 		uint16(decodeAisChar(data[8]))>>2
-
 	if year == 0 {
 		var t time.Time
 		return t, errors.New("station doesn't report time")
 	}
 
 	month := decodeAisChar(data[8])<<6>>4 | decodeAisChar(data[9])>>4
-
 	day := decodeAisChar(data[9])<<4>>3 | decodeAisChar(data[10])>>5
-
 	hour := decodeAisChar(data[10]) << 3 >> 3
-
 	minute := decodeAisChar(data[11])
-
 	second := decodeAisChar(data[12])
 
 	timeString := fmt.Sprintf("%d/%d/%d %d:%d:%d", year, month, day, hour, minute, second)
@@ -292,19 +287,19 @@ func CoordinatesDeg2Human(degLon, degLat float64) string {
 	return coordinates
 }
 
+// Navigation status codes
+var NavigationStatusCodes = [...]string{
+	"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability",
+	"Constrained by her draught", "Moored", "Aground", "Engaged in fishing", "Under way sailing",
+	"status code reserved", "status code reserved", "status code reserved",
+	"status code reserved", "status code reserved", "AIS-SART is active", "Not defined",
+}
+
 // PrintPositionData returns a formatted string with the detailed data of a AIS position message.
 // Its main use is to act as a guide for any developer wishing to correctly parse an AIS position message,
 // since some parts of a message are enumareted, and other parts although they mainly are numeric values,
 // for certain values they can have a non-numeric meaning.
 func PrintPositionData(m PositionMessage) string {
-
-	status := []string{
-		"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability",
-		"Constrained by her draught", "Moored", "Aground", "Engaged in fishing", "Under way sailing",
-		"status code reserved", "status code reserved", "status code reserved",
-		"status code reserved", "status code reserved", "AIS-SART is active", "Not defined",
-	}
-
 	turn := ""
 	switch {
 	case m.Turn == 0:
@@ -378,7 +373,7 @@ func PrintPositionData(m PositionMessage) string {
 		fmt.Sprintf("=== Message Type %d ===\n", m.Type) +
 			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
 			fmt.Sprintf(" MMSI         : %d\n", m.MMSI) +
-			fmt.Sprintf(" Nav.Status   : %s\n", status[m.Status]) +
+			fmt.Sprintf(" Nav.Status   : %s\n", NavigationStatusCodes[m.Status]) +
 			fmt.Sprintf(" Turn (ROT)   : %s\n", turn) +
 			fmt.Sprintf(" Speed (SOG)  : %s\n", speed) +
 			fmt.Sprintf(" Accuracy     : %s\n", accuracy) +
