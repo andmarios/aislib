@@ -139,10 +139,9 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 
 	m.Repeat = decodeAisChar(data[1]) >> 4
 
-	m.MMSI = uint32(decodeAisChar(data[1])) << 28
-	m.MMSI = m.MMSI >> 2
-	m.MMSI += uint32(decodeAisChar(data[2]))<<20 | uint32(decodeAisChar(data[3]))<<14 | uint32(decodeAisChar(data[4]))<<8 | uint32(decodeAisChar(data[5]))<<2
-	m.MMSI += uint32(decodeAisChar(data[6])) >> 4
+	m.MMSI = uint32(decodeAisChar(data[1]))<<28>>2 | uint32(decodeAisChar(data[2]))<<20 |
+		uint32(decodeAisChar(data[3]))<<14 | uint32(decodeAisChar(data[4]))<<8 |
+		uint32(decodeAisChar(data[5]))<<2 | uint32(decodeAisChar(data[6])) >> 4
 
 	m.Status = (decodeAisChar(data[6]) << 4) >> 4
 
