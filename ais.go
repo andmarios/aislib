@@ -136,21 +136,25 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 	data := []byte(payload)
 	var m PositionMessage
 
-	m.Type = decodeAisChar(data[0])
-
+	// m.Type = decodeAisChar(data[0])
+	m.Type=uint8(bitsToInt(0, 5, data))
 	if m.Type != 1 && m.Type != 2 && m.Type != 3 {
 		return m, errors.New("Message isn't Position Report.")
 	}
 
-	m.Repeat = decodeAisChar(data[1]) >> 4
+	//m.Repeat = decodeAisChar(data[1]) >> 4
+	m.Repeat = uint8(bitsToInt(6, 7, data))
 
-	m.MMSI = uint32(decodeAisChar(data[1]))<<28>>2 | uint32(decodeAisChar(data[2]))<<20 |
-		uint32(decodeAisChar(data[3]))<<14 | uint32(decodeAisChar(data[4]))<<8 |
-		uint32(decodeAisChar(data[5]))<<2 | uint32(decodeAisChar(data[6]))>>4
+	//m.MMSI = uint32(decodeAisChar(data[1]))<<28>>2 | uint32(decodeAisChar(data[2]))<<20 |
+	//	uint32(decodeAisChar(data[3]))<<14 | uint32(decodeAisChar(data[4]))<<8 |
+	//	uint32(decodeAisChar(data[5]))<<2 | uint32(decodeAisChar(data[6]))>>4
+	m.MMSI=bitsToInt(8, 37, data)
 
-	m.Status = (decodeAisChar(data[6]) << 4) >> 4
+	//m.Status = (decodeAisChar(data[6]) << 4) >> 4
+	m.Status = uint8(bitsToInt(38, 41, data))
 
-	m.Turn = float32(int8(decodeAisChar(data[7])<<2 | decodeAisChar(data[8])>>4))
+	//m.Turn = float32(int8(decodeAisChar(data[7])<<2 | decodeAisChar(data[8])>>4))
+	m.Turn = float32(int8(bitsToInt(42, 49, data)))
 	if m.Turn != 0 && m.Turn <= 126 && m.Turn >= -126 {
 		sign := float32(1)
 		if math.Signbit(float64(m.Turn)) {
@@ -160,7 +164,8 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 
 	}
 
-	m.Speed = float32(uint16(decodeAisChar(data[8]))<<12>>6 | uint16(decodeAisChar(data[9])))
+	//m.Speed = float32(uint16(decodeAisChar(data[8]))<<12>>6 | uint16(decodeAisChar(data[9])))
+	m.Speed = float32(bitsToInt(50, 59, data))
 	if m.Speed < 1022 {
 		m.Speed = m.Speed / 10
 	}
@@ -170,20 +175,25 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 		m.Accuracy = true
 	}
 
-	m.Lon = float64((int32(decodeAisChar(data[10]))<<27 | int32(decodeAisChar(data[11]))<<21 |
-		int32(decodeAisChar(data[12]))<<15 | int32(decodeAisChar(data[13]))<<9 |
-		int32(decodeAisChar(data[14]))>>1<<4)) / 16
-	m.Lat = float64((int32(decodeAisChar(data[14]))<<31 | int32(decodeAisChar(data[15]))<<25 |
-		int32(decodeAisChar(data[16]))<<19 | int32(decodeAisChar(data[17]))<<13 |
-		int32(decodeAisChar(data[18]))<<7 | int32(decodeAisChar(data[19]))>>4<<5)) / 32
+	//m.Lon = float64((int32(decodeAisChar(data[10]))<<27 | int32(decodeAisChar(data[11]))<<21 |
+	//	int32(decodeAisChar(data[12]))<<15 | int32(decodeAisChar(data[13]))<<9 |
+	//	int32(decodeAisChar(data[14]))>>1<<4)) / 16
+	m.Lon = float64((int32(bitsToInt(61, 88, data))<<4)) / 16
+	//m.Lat = float64((int32(decodeAisChar(data[14]))<<31 | int32(decodeAisChar(data[15]))<<25 |
+	//	int32(decodeAisChar(data[16]))<<19 | int32(decodeAisChar(data[17]))<<13 |
+	//	int32(decodeAisChar(data[18]))<<7 | int32(decodeAisChar(data[19]))>>4<<5)) / 32
+	m.Lat = float64((int32(bitsToInt(89, 115, data))<<5)) / 32
 	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
 
-	m.Course = float32(uint16(decodeAisChar(data[19]))<<12>>4|uint16(decodeAisChar(data[20]))<<2|
-		uint16(decodeAisChar(data[21]))>>4) / 10
+	//m.Course = float32(uint16(decodeAisChar(data[19]))<<12>>4|uint16(decodeAisChar(data[20]))<<2|
+	//	uint16(decodeAisChar(data[21]))>>4) / 10
+	m.Course = float32(bitsToInt(116, 127, data)) / 10
 
-	m.Heading = uint16(decodeAisChar(data[21]))<<12>>7 | uint16(decodeAisChar(data[22]))>>1
+	//m.Heading = uint16(decodeAisChar(data[21]))<<12>>7 | uint16(decodeAisChar(data[22]))>>1
+	m.Heading = uint16(bitsToInt(128, 136, data))
 
-	m.Second = decodeAisChar(data[22])<<7>>2 | decodeAisChar(data[23])>>1
+	//m.Second = decodeAisChar(data[22])<<7>>2 | decodeAisChar(data[23])>>1
+	m.Second = uint8(bitsToInt(137, 142, data))
 
 	m.Maneuver = decodeAisChar(data[23])<<7>>6 | decodeAisChar(data[24])>>5
 
@@ -408,4 +418,36 @@ func Nmea183ChecksumCheck(sentence string) bool {
 		return true
 	}
 	return false
+}
+
+// bitsToInt extracts certain bits from a payload.
+// Payload consists of six bit packets, each one armored in one byte.
+// The function seems simple enough but took me some hours to figure out.
+// It is necessary since this is the most frequent part of the message decoding process
+// and one can only write so many binary operations. We sacrifice performance a bit to
+// significantly ease development. :-/
+func bitsToInt(first, last int, payload []byte) uint32 {
+	size := uint(last - first) // Bit fields start at 0
+	processed, remain := uint(0), uint(0)
+	result, temp := uint32(0), uint32(0)
+
+	from  := first/6
+	forTimes := last/6 - from
+
+	for i := 0; i <= forTimes; i++ {
+		temp = uint32(decodeAisChar(payload[from + i]))
+		if i == 0 {
+			remain = uint(first % 6) + 1
+			processed = 6 - remain
+			temp = temp<<(31 - processed)>>(31 - size)
+		} else if i < forTimes  {
+			processed = processed + 6
+			temp = temp<<(size - processed)
+		} else {
+			remain = uint(last % 6) + 1
+			temp = temp>>(6 - remain)
+		}
+		result = result | temp
+	}
+	return result
 }
