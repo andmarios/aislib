@@ -435,15 +435,21 @@ func bitsToInt(first, last int, payload []byte) uint32 {
 	forTimes := last/6 - from
 
 	for i := 0; i <= forTimes; i++ {
-		temp = uint32(decodeAisChar(payload[from + i]))
-		if i == 0 {
+		// Instead of calling decodeAisChar we do the calculation manually here for speed.
+		temp = uint32(payload[from + i]) - 48
+		if temp > 40 {
+			temp -= 8
+		}
+
+		// Depending on which byte in sequence we processing, do the appropriate shifts.
+		if i == 0 { // For the first byte we (may) have to clean leftmost bits and shift to position
 			remain = uint(first % 6) + 1
 			processed = 6 - remain
 			temp = temp<<(31 - processed)>>(31 - size)
-		} else if i < forTimes  {
+		} else if i < forTimes  { // For middle bytes we only shift to position
 			processed = processed + 6
 			temp = temp<<(size - processed)
-		} else {
+		} else { // For last byte we (may) clear rightmost bits
 			remain = uint(last % 6) + 1
 			temp = temp>>(6 - remain)
 		}
