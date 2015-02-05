@@ -129,8 +129,14 @@ func BenchmarkRouter(b *testing.B) {
 	go Router(send, receive, failed)
 
 	for i := 0; i < b.N; i++ {
-		send <- "!AIVDM,1,1,,B,38u<a<?PAA2>P:WfuAO9PW<P0PuQ,0*6F"
-		<-receive
+		if i % 2 == 0 {
+			send <- "!AIVDM,1,1,,B,38u<a<?PAA2>P:WfuAO9PW<P0PuQ,0*6F"
+			<-receive
+		} else {
+			send <- "!AIVDM,2,1,5,A,533iFNT00003W;3G;384iT<T400000000000001?88?73v0ik0RC1H11H30H,0*44"
+			send <- "!AIVDM,2,2,5,A,51CU0E2CkP0,2*0C"
+			<-receive
+		}
 	}
 }
 
