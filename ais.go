@@ -505,42 +505,44 @@ func PrintBaseStationReport(m BaseStationReport) string {
 // equipment of the ship). We may add them in the future.
 // Have a look at http://en.wikipedia.org/wiki/Maritime_Mobile_Service_Identity
 func PrintMMSI(m uint32) string {
-	mid := fmt.Sprintf("%09d", m)
+	mid := fmt.Sprintf("%9d", m)
 	data := ""
 
-	switch mid[0:1] {
-	case "0":
-		if mid[1:2] == "0" {
-			m = m / 10000
-			data = "Coastal Station, " + Mid[int(m)]
-		} else {
-			m = m / 100000
-			data = "Group of ships,  " + Mid[int(m)]
-		}
-	case "1":
-		m = m / 1000 - 111000
-		data = "SAR —Search and Rescue Aircraft, " + Mid[int(m)]
-	case "2", "3", "4", "5", "6", "7":
+	// Current intervals:
+	// [0 00999999][010000000 099999999][100000000 199999999][200000000 799999999]
+	// [800000000 899999999]...[970000000 970999999]...[972000000 972999999]...
+	// [974000000 974999999]...[98000000 98999999][99000000 999999999]
+	switch {
+	case m >= 200000000 && m < 800000000:
 		m = m / 1000000
 		data = "Ship, " + Mid[int(m)]
-	case "8":
+	case m <= 9999999:
+		m = m / 10000
+		data = "Coastal Station, " + Mid[int(m)]
+	case m <= 99999999:
+		m = m / 100000
+		data = "Group of ships,  " + Mid[int(m)]
+	case m <= 199999999:
+		m = m / 1000 - 111000
+		data = "SAR —Search and Rescue Aircraft, " + Mid[int(m)]
+	case m < 900000000:
 		m = m / 100000 - 8000
 		data = "Diver's radio, " + Mid[int(m)]
-	case "9":
-		if mid[1:2] == "9" {
-			m = m / 10000 - 99000
-			data = "Aids to navigation, " + Mid[int(m)]
-		} else if mid[1:2] == "8" {
-			m = m / 10000 - 98000
-			data = "Auxiliary craft associated with parent ship, " + Mid[int(m)]
-		} else if mid[1:3] == "970" {
-			m = m / 1000 - 970000
-			data = "AIS SART —Search and Rescue Transmitter, " + Mid[int(m)]
-		} else if mid[1:3] == "972" {
-			data = "MOB —Man Overboard Device"
-		} else if mid[1:3] == "974" {
-			data = "EPIRB —Emergency Position Indicating Radio Beacon"
-		}
+	case m >= 990000000 && m < 1000000000:
+		m = m / 10000 - 99000
+		data = "Aids to navigation, " + Mid[int(m)]
+	case m >= 980000000 && m < 990000000:
+		m = m / 10000 - 98000
+		data = "Auxiliary craft associated with parent ship, " + Mid[int(m)]
+	case m >= 970000000 && m < 970999999:
+		m = m / 1000 - 970000
+		data = "AIS SART —Search and Rescue Transmitter, " + Mid[int(m)]
+	case m >= 972000000 && m < 972999999:
+		data = "MOB —Man Overboard Device"
+	case m >=974000000 && m < 974999999:
+		data = "EPIRB —Emergency Position Indicating Radio Beacon"
+	default:
+		data = "Invalid MMSI"
 	}
 	return data + " [" + mid + "]"
 }
