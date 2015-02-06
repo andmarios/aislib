@@ -16,7 +16,7 @@ import (
 var serveJSON string
 
 type shipData struct {
-	Data  ais.PositionMessage
+	Data  ais.ClassAPositionReport
 	Human string
 }
 
@@ -38,7 +38,7 @@ func main() {
 			select {
 			case message = <-receive:
 				if message.Type >= 1 && message.Type <= 3 {
-					m, _ := ais.DecodePositionMessage(message.Payload)
+					m, _ := ais.DecodeClassAPositionReport(message.Payload)
 					seen[m.MMSI] = shipData{m, ais.PrintPositionData(m)}
 				}
 			case problematic = <-failed:

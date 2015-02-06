@@ -32,15 +32,12 @@ type FailedSentence struct {
 	Issue    string
 }
 
-// A PositionMessage is a decoded AIS position message (messages of type 1, 2 or 3).
-// Please have a look at http://catb.org/gpsd/AIVDM.html and at
-// http://www.navcen.uscg.gov/?pageName=AISMessagesA
-type PositionMessage struct {
+// A PositionReport is the generic structure of a Position Report, containing the common fields
+// between Class A and B reports.
+type PositionReport struct {
 	Type     uint8
 	Repeat   uint8
 	MMSI     uint32
-	Status   uint8   // navigation status (enumerated type)
-	Turn     float32 // rate of turn - ROT (sc - Special Calc I3)
 	Speed    float32 // speed over ground - SOG (sc U3)
 	Accuracy bool    // position accuracy
 	Lon      float64 // (sc I4)
@@ -48,9 +45,45 @@ type PositionMessage struct {
 	Course   float32 //course over ground - COG (sc U1)
 	Heading  uint16  // true heading - HDG
 	Second   uint8   // timestamp
-	Maneuver uint8   // maneuver indicator (enumerated)
 	RAIM     bool    // RAIM flag
 	Radio    uint32  // Radio status
+}
+
+// A ClassAPositionReport is a decoded AIS position message (messages of type 1, 2 or 3).
+// Please have a look at http://catb.org/gpsd/AIVDM.html and at
+// http://www.navcen.uscg.gov/?pageName=AISMessagesA
+type ClassAPositionReport struct {
+	PositionReport
+	Status   uint8   // navigation status (enumerated type)
+	Turn     float32 // rate of turn - ROT (sc - Special Calc I3)
+	Maneuver uint8   // maneuver indicator (enumerated)
+}
+
+// Navigation status codes
+var NavigationStatusCodes = [...]string{
+	"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability",
+	"Constrained by her draught", "Moored", "Aground", "Engaged in fishing", "Under way sailing",
+	"status code reserved", "status code reserved", "status code reserved",
+	"status code reserved", "status code reserved", "AIS-SART is active", "Not defined",
+}
+
+// A BaseStationReport is a decoded AIS base station report (message type 4)
+type BaseStationReport struct {
+	Repeat   uint8
+	MMSI     uint32
+	Time     time.Time
+	Accuracy bool
+	Lon      float64
+	Lat      float64
+	EPFD     uint8 // Enum type
+	RAIM     bool
+	Radio    uint32
+}
+
+// EPFD Fix Codes
+var EpfdFixTypes = [...]string{
+	"Undefined", "GPS", "GLONASS", "Combined GPS/GLONASS", "Loran-C",
+	"Chayka", "Integrated Navigation System", "Surveyed", "Galileo",
 }
 
 func decodeAisChar(character byte) byte {
@@ -99,6 +132,13 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 		if tokens[1] == "1" { // One sentence message, process it immediately
 			padding, _ = strconv.Atoi(tokens[6][:1])
 			out <- Message{MessageType(tokens[5]), tokens[5], uint8(padding)}
+			if count > 1 { // Invalidate cache
+				for i := 0; i <= count; i++ {
+					failed <- FailedSentence{cache[i], "Incomplete/out of order span sentence"}
+				}
+				count = 0
+				payload = ""
+			}
 		} else { // Message spans across sentences.
 			ccount, err = strconv.Atoi(tokens[2])
 			if err != nil {
@@ -107,9 +147,15 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 			}
 			if ccount != count+1 || // If there are sentences with wrong seq.number in cache send them as failed
 				tokens[3] != id && count != 0 || // If there are sentences with different sequence id in cache , send old parts as failed
-				tokens[1] != size && count != 0 { // If there messages with wrogn size in cache, send them as failed
-				for i := 0; i <= count; i++ {
+				tokens[1] != size && count != 0 { // If there messages with wrong size in cache, send them as failed
+				for i := 0; i < count; i++ {
 					failed <- FailedSentence{cache[i], "Incomplete/out of order span sentence"}
+				}
+				if ccount != 1 { // The current one is invalid too
+					failed <- FailedSentence{sentence, "Incomplete/out of order span sentence"}
+					count = 0
+					payload = ""
+					continue
 				}
 				count = 0
 				payload = ""
@@ -131,13 +177,12 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 	out <- Message{255, "", 0}
 }
 
-// DecodePositionMessage decodes [the payload of] an AIS position message (type 1/2/3)
-func DecodePositionMessage(payload string) (PositionMessage, error) {
+// DecodeClassAPositionReport decodes [the payload of] an AIS position message (type 1/2/3)
+func DecodeClassAPositionReport(payload string) (ClassAPositionReport, error) {
 	data := []byte(payload)
-	var m PositionMessage
+	var m ClassAPositionReport
 
-	// m.Type = decodeAisChar(data[0])
-	m.Type=uint8(bitsToInt(0, 5, data))
+	m.Type = decodeAisChar(data[0])
 	if m.Type != 1 && m.Type != 2 && m.Type != 3 {
 		return m, errors.New("Message isn't Position Report.")
 	}
@@ -148,7 +193,7 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 	//m.MMSI = uint32(decodeAisChar(data[1]))<<28>>2 | uint32(decodeAisChar(data[2]))<<20 |
 	//	uint32(decodeAisChar(data[3]))<<14 | uint32(decodeAisChar(data[4]))<<8 |
 	//	uint32(decodeAisChar(data[5]))<<2 | uint32(decodeAisChar(data[6]))>>4
-	m.MMSI=bitsToInt(8, 37, data)
+	m.MMSI = bitsToInt(8, 37, data)
 
 	//m.Status = (decodeAisChar(data[6]) << 4) >> 4
 	m.Status = uint8(bitsToInt(38, 41, data))
@@ -178,11 +223,11 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 	//m.Lon = float64((int32(decodeAisChar(data[10]))<<27 | int32(decodeAisChar(data[11]))<<21 |
 	//	int32(decodeAisChar(data[12]))<<15 | int32(decodeAisChar(data[13]))<<9 |
 	//	int32(decodeAisChar(data[14]))>>1<<4)) / 16
-	m.Lon = float64((int32(bitsToInt(61, 88, data))<<4)) / 16
+	m.Lon = float64((int32(bitsToInt(61, 88, data)) << 4)) / 16
 	//m.Lat = float64((int32(decodeAisChar(data[14]))<<31 | int32(decodeAisChar(data[15]))<<25 |
 	//	int32(decodeAisChar(data[16]))<<19 | int32(decodeAisChar(data[17]))<<13 |
 	//	int32(decodeAisChar(data[18]))<<7 | int32(decodeAisChar(data[19]))>>4<<5)) / 32
-	m.Lat = float64((int32(bitsToInt(89, 115, data))<<5)) / 32
+	m.Lat = float64((int32(bitsToInt(89, 115, data)) << 5)) / 32
 	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
 
 	//m.Course = float32(uint16(decodeAisChar(data[19]))<<12>>4|uint16(decodeAisChar(data[20]))<<2|
@@ -202,11 +247,53 @@ func DecodePositionMessage(payload string) (PositionMessage, error) {
 		m.RAIM = true
 	}
 
+	m.Radio = bitsToInt(149, 167, data)
+	return m, nil
+}
+
+// DecodeBaseStationReport decodes the payload of a Type 4 AIS message
+func DecodeBaseStationReport(payload string) (BaseStationReport, error) {
+	data := []byte(payload)
+	var m BaseStationReport
+
+	mType := decodeAisChar(data[0])
+	if mType != 4 {
+		return m, errors.New("Message isn't Base Station Report.")
+	}
+
+	//m.Repeat = decodeAisChar(data[1]) >> 4
+	m.Repeat = uint8(bitsToInt(6, 7, data))
+
+	//m.MMSI = uint32(decodeAisChar(data[1]))<<28>>2 | uint32(decodeAisChar(data[2]))<<20 |
+	//	uint32(decodeAisChar(data[3]))<<14 | uint32(decodeAisChar(data[4]))<<8 |
+	//	uint32(decodeAisChar(data[5]))<<2 | uint32(decodeAisChar(data[6]))>>4
+	m.MMSI = bitsToInt(8, 37, data)
+
+	m.Time, _ = GetReferenceTime(payload) // Some base stations do not report time, for this case we do not consider it as error
+
+	m.Accuracy = false
+	if decodeAisChar(data[13])>>5 == 1 {
+		m.Accuracy = true
+	}
+
+	m.Lon = float64((int32(bitsToInt(79, 106, data)) << 4)) / 16
+	m.Lat = float64((int32(bitsToInt(107, 133, data)) << 5)) / 32
+	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
+
+	m.EPFD = uint8(bitsToInt(134, 137, data))
+
+	m.RAIM = false
+	if bitsToInt(148, 148, data) == 1 {
+		m.RAIM = true
+	}
+
+	m.Radio = bitsToInt(149, 167, data)
 	return m, nil
 }
 
 // GetReferenceTime takes [the payload of] an AIS Base Station message (type 4)
-// and returns the time data of it.
+// and returns the time data of it. It is a separate function from DecodeBaseStationReport
+// because it can be useful to set a timeframe for our received AIS messages.
 func GetReferenceTime(payload string) (time.Time, error) {
 	data := []byte(payload)
 
@@ -297,19 +384,11 @@ func CoordinatesDeg2Human(degLon, degLat float64) string {
 	return coordinates
 }
 
-// Navigation status codes
-var NavigationStatusCodes = [...]string{
-	"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability",
-	"Constrained by her draught", "Moored", "Aground", "Engaged in fishing", "Under way sailing",
-	"status code reserved", "status code reserved", "status code reserved",
-	"status code reserved", "status code reserved", "AIS-SART is active", "Not defined",
-}
-
 // PrintPositionData returns a formatted string with the detailed data of a AIS position message.
 // Its main use is to act as a guide for any developer wishing to correctly parse an AIS position message,
 // since some parts of a message are enumareted, and other parts although they mainly are numeric values,
 // for certain values they can have a non-numeric meaning.
-func PrintPositionData(m PositionMessage) string {
+func PrintPositionData(m ClassAPositionReport) string {
 	turn := ""
 	switch {
 	case m.Turn == 0:
@@ -336,11 +415,8 @@ func PrintPositionData(m PositionMessage) string {
 		speed = "information not available"
 	}
 
-	accuracy := ""
-	switch {
-	case m.Accuracy == true:
-		accuracy = "High accuracy (<10m)"
-	case m.Accuracy == false:
+	accuracy := "High accuracy (<10m)"
+	if m.Accuracy == false {
 		accuracy = "Low accuracy (>10m)"
 	}
 
@@ -380,9 +456,9 @@ func PrintPositionData(m PositionMessage) string {
 	}
 
 	message :=
-		fmt.Sprintf("=== Message Type %d ===\n", m.Type) +
+		fmt.Sprintf("=== Class A Position Report (%d) ===\n", m.Type) +
 			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
-			fmt.Sprintf(" MMSI         : %d\n", m.MMSI) +
+			fmt.Sprintf(" MMSI         : %09d\n", m.MMSI) +
 			fmt.Sprintf(" Nav.Status   : %s\n", NavigationStatusCodes[m.Status]) +
 			fmt.Sprintf(" Turn (ROT)   : %s\n", turn) +
 			fmt.Sprintf(" Speed (SOG)  : %s\n", speed) +
@@ -391,6 +467,32 @@ func PrintPositionData(m PositionMessage) string {
 			fmt.Sprintf(" Course (COG) : %s\n", course) +
 			fmt.Sprintf(" Heading (HDG): %s\n", heading) +
 			fmt.Sprintf(" Manuever ind.: %s\n", maneuver) +
+			fmt.Sprintf(" RAIM         : %s\n", raim)
+
+	return message
+}
+
+// PrintBaseStationReport returns a formatted string of a BaseStationReport. Mainly to help
+// developers with understanding base position reports.
+func PrintBaseStationReport(m BaseStationReport) string {
+	accuracy := "High accuracy (<10m)"
+	if m.Accuracy == false {
+		accuracy = "Low accuracy (>10m)"
+	}
+
+	raim := "not in use"
+	if m.RAIM == true {
+		raim = "in use"
+	}
+
+	message :=
+		fmt.Sprintf("=== Base Station Report ===\n") +
+			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
+			fmt.Sprintf(" MMSI         : %09d\n", m.MMSI) +
+			fmt.Sprintf(" Time         : %s\n", m.Time.String()) +
+			fmt.Sprintf(" Accuracy     : %s\n", accuracy) +
+			fmt.Sprintf(" Coordinates  : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
+			fmt.Sprintf(" EPFD         : %s\n", EpfdFixTypes[m.EPFD]) +
 			fmt.Sprintf(" RAIM         : %s\n", raim)
 
 	return message
@@ -431,27 +533,27 @@ func bitsToInt(first, last int, payload []byte) uint32 {
 	processed, remain := uint(0), uint(0)
 	result, temp := uint32(0), uint32(0)
 
-	from  := first/6
+	from := first / 6
 	forTimes := last/6 - from
 
 	for i := 0; i <= forTimes; i++ {
 		// Instead of calling decodeAisChar we do the calculation manually here for speed.
-		temp = uint32(payload[from + i]) - 48
+		temp = uint32(payload[from+i]) - 48
 		if temp > 40 {
 			temp -= 8
 		}
 
 		// Depending on which byte in sequence we processing, do the appropriate shifts.
 		if i == 0 { // For the first byte we (may) have to clean leftmost bits and shift to position
-			remain = uint(first % 6) + 1
+			remain = uint(first%6) + 1
 			processed = 6 - remain
-			temp = temp<<(31 - processed)>>(31 - size)
-		} else if i < forTimes  { // For middle bytes we only shift to position
+			temp = temp << (31 - processed) >> (31 - size)
+		} else if i < forTimes { // For middle bytes we only shift to position
 			processed = processed + 6
-			temp = temp<<(size - processed)
+			temp = temp << (size - processed)
 		} else { // For last byte we (may) clear rightmost bits
-			remain = uint(last % 6) + 1
-			temp = temp>>(6 - remain)
+			remain = uint(last%6) + 1
+			temp = temp >> (6 - remain)
 		}
 		result = result | temp
 	}

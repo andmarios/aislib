@@ -27,17 +27,11 @@ func main() {
 			select {
 			case message = <-receive:
 				if message.Type >= 1 && message.Type <= 3 {
-					positionMessage, _ := ais.DecodePositionMessage(message.Payload)
-					fmt.Println(ais.PrintPositionData(positionMessage))
+					t, _ := ais.DecodeClassAPositionReport(message.Payload)
+					fmt.Println(ais.PrintPositionData(t))
 				} else if message.Type == 4 {
-					t, err := ais.GetReferenceTime(message.Payload)
-					if err != nil {
-						log.Println(err)
-					} else {
-						fmt.Println("=== Reference Time ===")
-						fmt.Println(t)
-						fmt.Println()
-					}
+					t, _ := ais.DecodeBaseStationReport(message.Payload)
+					fmt.Println(ais.PrintBaseStationReport(t))
 				} else if message.Type == 255 {
 					done <- true
 				} else {
