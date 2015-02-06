@@ -1,10 +1,16 @@
-- Most frequent messages are types 1, 3, 4, 5, 18. We should decode all of them. Current we decode 1, 3, 4.
+## TODO
+
+- Most frequent messages are types 1, 3, 4, 5, 18. We should decode all of them. Currently we decode 1, 3, 4.
+- Find out what ports' reports are. I think they announce when a ship arrives/leaves from port.
+- Found out how satellite can be used to capture all AIS.
+- Decode Type 8 weather report subtype messages.
 - DONE: Decode MMSI (includes country or other info as well)
 - DONE: Implement a generic router where we feed it messages and it returns message type and payload or error.
 - DONE: implement a parser for payloads spanning across 2 or more AIS messages. (tricky: variable length, out of order maybe, maybe we should expire if we don't receive all parts after some time)
 
 
-Notes:
+## Notes:
+
 - Type 1/2/3/4/9/11/18/22 -        168bits -       1 sentence
 - Type 5                  -        424bits -       2 sentences
 - Type 6/8/12/14          - up to 1008bits - up to 5 sentences
@@ -21,3 +27,15 @@ Notes:
 - Type 25                 -  up to 168bits -       1 sentence
 - Type 26                 -    60-1064bits - up to 5 sentences
 - Type 27                 -  96 or 168bits -       1 sentence
+
+## Stats
+
+Out of 76175 type 1, 3, 4 messages analyzed:
+
+71162 / 76175 Ship
+ 4344 / 76175 Coastal Station
+  316 / 76175 Group of ships
+  213 / 76175 Aids to navigation
+  109 / 76175 SAR —Search and Rescue Aircraft
+   20 / 76175 Diver's radio
+   01 / 76175 invalid MMSI

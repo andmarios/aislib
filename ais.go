@@ -84,6 +84,8 @@ type BaseStationReport struct {
 var EpfdFixTypes = [...]string{
 	"Undefined", "GPS", "GLONASS", "Combined GPS/GLONASS", "Loran-C",
 	"Chayka", "Integrated Navigation System", "Surveyed", "Galileo",
+	"not defined", "not defined", "not defined", "not defined",
+	"not defined", "not defined", "not defined",
 }
 
 func decodeAisChar(character byte) byte {
@@ -501,6 +503,7 @@ func PrintBaseStationReport(m BaseStationReport) string {
 // PrintMMSI returns a string with the type of the owner of the MMSI and its country
 // Some MMSIs aren't valid. There is some more information in some MMSIs (the satellite
 // equipment of the ship). We may add them in the future.
+// Have a look at http://en.wikipedia.org/wiki/Maritime_Mobile_Service_Identity
 func PrintMMSI(m uint32) string {
 	mid := fmt.Sprintf("%09d", m)
 	data := ""
