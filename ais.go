@@ -460,7 +460,7 @@ func PrintPositionData(m ClassAPositionReport) string {
 	message :=
 		fmt.Sprintf("=== Class A Position Report (%d) ===\n", m.Type) +
 			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
-			fmt.Sprintf(" MMSI         : %s\n", PrintMMSI(m.MMSI)) +
+			fmt.Sprintf(" MMSI         : %09d [%s]\n", m.MMSI, DecodeMMSI(m.MMSI)) +
 			fmt.Sprintf(" Nav.Status   : %s\n", NavigationStatusCodes[m.Status]) +
 			fmt.Sprintf(" Turn (ROT)   : %s\n", turn) +
 			fmt.Sprintf(" Speed (SOG)  : %s\n", speed) +
@@ -490,7 +490,7 @@ func PrintBaseStationReport(m BaseStationReport) string {
 	message :=
 		fmt.Sprintf("=== Base Station Report ===\n") +
 			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
-			fmt.Sprintf(" MMSI         : %s\n", PrintMMSI(m.MMSI)) +
+			fmt.Sprintf(" MMSI         : %09d [%s]\n", m.MMSI, DecodeMMSI(m.MMSI)) +
 			fmt.Sprintf(" Time         : %s\n", m.Time.String()) +
 			fmt.Sprintf(" Accuracy     : %s\n", accuracy) +
 			fmt.Sprintf(" Coordinates  : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
@@ -500,13 +500,22 @@ func PrintBaseStationReport(m BaseStationReport) string {
 	return message
 }
 
-// PrintMMSI returns a string with the type of the owner of the MMSI and its country
+// Contains MMSI owners' descriptions. Currently not used anywhere
+var MmsiCodes = [...]string{
+	"Ship", "Coastal Station", "Group of ships", "SAR —Search and Rescue Aircraft",
+	"Diver's radio", "Aids to navigation", "Auxiliary craft associated with parent ship",
+	"AIS SART —Search and Rescue Transmitter", "MOB —Man Overboard Device",
+	"EPIRB —Emergency Position Indicating Radio Beacon", "Invalid MMSI",
+}
+
+// DecodeMMSI returns a string with the type of the owner of the MMSI and its country
 // Some MMSIs aren't valid. There is some more information in some MMSIs (the satellite
 // equipment of the ship). We may add them in the future.
 // Have a look at http://en.wikipedia.org/wiki/Maritime_Mobile_Service_Identity
-func PrintMMSI(m uint32) string {
-	mid := fmt.Sprintf("%9d", m)
-	data := ""
+func DecodeMMSI(m uint32) string {
+	owner := ""
+	country := ""
+	mid := uint32(1000)
 
 	// Current intervals:
 	// [0 00999999][010000000 099999999][100000000 199999999][200000000 799999999]
@@ -514,37 +523,45 @@ func PrintMMSI(m uint32) string {
 	// [974000000 974999999]...[98000000 98999999][99000000 999999999]
 	switch {
 	case m >= 200000000 && m < 800000000:
-		m = m / 1000000
-		data = "Ship, " + Mid[int(m)]
+		mid = m / 1000000
+		owner = "Ship"
 	case m <= 9999999:
-		m = m / 10000
-		data = "Coastal Station, " + Mid[int(m)]
+		mid = m / 10000
+		owner = "Coastal Station"
 	case m <= 99999999:
-		m = m / 100000
-		data = "Group of ships,  " + Mid[int(m)]
+		mid = m / 100000
+		owner = "Group of ships"
 	case m <= 199999999:
-		m = m / 1000 - 111000
-		data = "SAR —Search and Rescue Aircraft, " + Mid[int(m)]
+		mid = m / 1000 - 111000
+		owner = "SAR —Search and Rescue Aircraft"
 	case m < 900000000:
-		m = m / 100000 - 8000
-		data = "Diver's radio, " + Mid[int(m)]
+		mid = m / 100000 - 8000
+		owner = "Diver's radio"
 	case m >= 990000000 && m < 1000000000:
-		m = m / 10000 - 99000
-		data = "Aids to navigation, " + Mid[int(m)]
+		mid = m / 10000 - 99000
+		owner = "Aids to navigation"
 	case m >= 980000000 && m < 990000000:
-		m = m / 10000 - 98000
-		data = "Auxiliary craft associated with parent ship, " + Mid[int(m)]
+		mid = m / 10000 - 98000
+		owner = "Auxiliary craft associated with parent ship"
 	case m >= 970000000 && m < 970999999:
-		m = m / 1000 - 970000
-		data = "AIS SART —Search and Rescue Transmitter, " + Mid[int(m)]
+		mid = m / 1000 - 970000
+		owner = "AIS SART —Search and Rescue Transmitter"
 	case m >= 972000000 && m < 972999999:
-		data = "MOB —Man Overboard Device"
+		owner = "MOB —Man Overboard Device"
 	case m >=974000000 && m < 974999999:
-		data = "EPIRB —Emergency Position Indicating Radio Beacon"
+		owner = "EPIRB —Emergency Position Indicating Radio Beacon"
 	default:
-		data = "Invalid MMSI"
+		owner = "Invalid MMSI"
 	}
-	return data + " [" + mid + "]"
+
+	if mid < 1000 {
+		country = Mid[int(mid)]
+		if country == "" {
+			country = "Unknown Country ID"
+		}
+		return owner + ", " + country
+	}
+	return owner
 }
 
 // Nmea183ChecksumCheck performs a checksum check for NMEA183 sentences.

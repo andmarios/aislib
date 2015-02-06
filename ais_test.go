@@ -204,40 +204,40 @@ func BenchmarkNmea183ChecksumCheck(b *testing.B) {
 }
 
 // I didn't found a MMSI decoder, so this test is verified only by me
-func TestPrintMMSI(t *testing.T) {
+func TestDecodeMMSI(t *testing.T) {
 	cases := []struct {
 		MMSI uint32
 		reference string
 	}{
-		{227006760, "Ship, France [227006760]"},
-		{2573425, "Coastal Station, Norway [  2573425]"},
-		{25634906, "Group of ships,  Malta [ 25634906]"},
-		{842517724, "Diver's radio, Iraq (Republic of) [842517724]"},
-		{992351000, "Aids to navigation, United Kingdom of Great Britain and Northern Ireland [992351000]"},
-		{1000010000, "Invalid MMSI [1000010000]"},
-		{972345000, "MOB —Man Overboard Device [972345000]"},
-		{970241023, "AIS SART —Search and Rescue Transmitter, Greece [970241023]"},
-		{971356034, "Invalid MMSI [971356034]"},
+		{227006760, "Ship, France"},
+		{2573425, "Coastal Station, Norway"},
+		{25634906, "Group of ships, Malta"},
+		{842517724, "Diver's radio, Iraq (Republic of)"},
+		{992351000, "Aids to navigation, United Kingdom of Great Britain and Northern Ireland"},
+		{1000010000, "Invalid MMSI"},
+		{972345000, "MOB —Man Overboard Device"},
+		{970241023, "AIS SART —Search and Rescue Transmitter, Greece"},
+		{971356034, "Invalid MMSI"},
 	}
 	for _, c := range cases {
-		got := PrintMMSI(c.MMSI)
+		got := DecodeMMSI(c.MMSI)
 		if got != c.reference {
 			fmt.Println("Got : ", got)
 			fmt.Println("Want: ", c.reference)
-			t.Errorf("PrintMMSI(m uint32)")
+			t.Errorf("DecodeMMSI(m uint32)")
 		}
 	}
 }
 
-func BenchmarkPrintMMSI(b *testing.B) {
+func BenchmarkDecodeMMSI(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		switch {
 		case  i%116 < 108:
-			PrintMMSI(316013198)
+			DecodeMMSI(316013198)
 		case  i%116 < 115:
-			PrintMMSI(002241076)
+			DecodeMMSI(002241076)
 		default:
-			PrintMMSI(992351000)
+			DecodeMMSI(992351000)
 		}
 	}
 }
