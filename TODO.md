@@ -1,7 +1,8 @@
-- Most frequent messages are types 1, 3, 4, 5, 18. We should decode all of them.
-- Implement a parser for payloads spanning across 2 or more AIS messages. (tricky: variable length, out of order maybe, maybe we should expire if we don't receive all parts after some time)
-- Implement a generic router where we feed it messages and it returns message type and payload or error.
-- Decode MMSI (includes country or other info as well)
+- Most frequent messages are types 1, 3, 4, 5, 18. We should decode all of them. Current we decode 1, 3, 4.
+- DONE: Decode MMSI (includes country or other info as well)
+- DONE: Implement a generic router where we feed it messages and it returns message type and payload or error.
+- DONE: implement a parser for payloads spanning across 2 or more AIS messages. (tricky: variable length, out of order maybe, maybe we should expire if we don't receive all parts after some time)
+
 
 Notes:
 - Type 1/2/3/4/9/11/18/22 -        168bits -       1 sentence

@@ -458,7 +458,7 @@ func PrintPositionData(m ClassAPositionReport) string {
 	message :=
 		fmt.Sprintf("=== Class A Position Report (%d) ===\n", m.Type) +
 			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
-			fmt.Sprintf(" MMSI         : %09d\n", m.MMSI) +
+			fmt.Sprintf(" MMSI         : %s\n", PrintMMSI(m.MMSI)) +
 			fmt.Sprintf(" Nav.Status   : %s\n", NavigationStatusCodes[m.Status]) +
 			fmt.Sprintf(" Turn (ROT)   : %s\n", turn) +
 			fmt.Sprintf(" Speed (SOG)  : %s\n", speed) +
@@ -488,7 +488,7 @@ func PrintBaseStationReport(m BaseStationReport) string {
 	message :=
 		fmt.Sprintf("=== Base Station Report ===\n") +
 			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
-			fmt.Sprintf(" MMSI         : %09d\n", m.MMSI) +
+			fmt.Sprintf(" MMSI         : %s\n", PrintMMSI(m.MMSI)) +
 			fmt.Sprintf(" Time         : %s\n", m.Time.String()) +
 			fmt.Sprintf(" Accuracy     : %s\n", accuracy) +
 			fmt.Sprintf(" Coordinates  : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
@@ -496,6 +496,50 @@ func PrintBaseStationReport(m BaseStationReport) string {
 			fmt.Sprintf(" RAIM         : %s\n", raim)
 
 	return message
+}
+
+// PrintMMSI returns a string with the type of the owner of the MMSI and its country
+// Some MMSIs aren't valid. There is some more information in some MMSIs (the satellite
+// equipment of the ship). We may add them in the future.
+func PrintMMSI(m uint32) string {
+	mid := fmt.Sprintf("%09d", m)
+	data := ""
+
+	switch mid[0:1] {
+	case "0":
+		if mid[1:2] == "0" {
+			m = m / 10000
+			data = "Coastal Station, " + Mid[int(m)]
+		} else {
+			m = m / 100000
+			data = "Group of ships,  " + Mid[int(m)]
+		}
+	case "1":
+		m = m / 1000 - 111000
+		data = "SAR —Search and Rescue Aircraft, " + Mid[int(m)]
+	case "2", "3", "4", "5", "6", "7":
+		m = m / 1000000
+		data = "Ship, " + Mid[int(m)]
+	case "8":
+		m = m / 100000 - 8000
+		data = "Diver's radio, " + Mid[int(m)]
+	case "9":
+		if mid[1:2] == "9" {
+			m = m / 10000 - 99000
+			data = "Aids to navigation, " + Mid[int(m)]
+		} else if mid[1:2] == "8" {
+			m = m / 10000 - 98000
+			data = "Auxiliary craft associated with parent ship, " + Mid[int(m)]
+		} else if mid[1:3] == "970" {
+			m = m / 1000 - 970000
+			data = "AIS SART —Search and Rescue Transmitter, " + Mid[int(m)]
+		} else if mid[1:3] == "972" {
+			data = "MOB —Man Overboard Device"
+		} else if mid[1:3] == "974" {
+			data = "EPIRB —Emergency Position Indicating Radio Beacon"
+		}
+	}
+	return data + " [" + mid + "]"
 }
 
 // Nmea183ChecksumCheck performs a checksum check for NMEA183 sentences.
