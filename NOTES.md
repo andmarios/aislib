@@ -1,9 +1,16 @@
 ## TODO
 
-- Most frequent messages are types 1, 3, 4, 5, 18. We should decode all of them. Currently we decode 1, 3, 4.
+- Most frequent messages are types 1, 3, 4, 5, 18. We should decode all of them. Currently we decode 1, 3, 4 and 5.
 - Find out what ports' reports are. I think they announce when a ship arrives/leaves from port.
 - Found out how satellite can be used to capture all AIS.
-- Decode Type 8 weather report subtype messages.
+- Decode some Type 8 messages: 1-11, 1-31 (meteorological), Area Notice, Extended Static and Voyage Related Data, Route Information, etc
+- Decode Type 9 messages: search and rescue aircrafts position report
+- Decode Type 12 messages: addressed safety related message
+- Decode Type 14 messages: broadcast safety related message
+- Decode Type 19 messages: Class B extended position report (something between type 18 and type 5)
+- Decode Type 21 messages: aid to navigation report
+- Decode Type 27 messages: long range Class A position reports
+- Decode Type 6 DAC-FIDs in order to have some stats. Though Type 6 mesages are very rare it seems.
 - DONE: Decode MMSI (includes country or other info as well)
 - DONE: Implement a generic router where we feed it messages and it returns message type and payload or error.
 - DONE: implement a parser for payloads spanning across 2 or more AIS messages. (tricky: variable length, out of order maybe, maybe we should expire if we don't receive all parts after some time)

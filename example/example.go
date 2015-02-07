@@ -26,18 +26,22 @@ failed := make(chan ais.FailedSentence, 1024 * 8)
 		for {
 			select {
 			case message = <-receive:
-				if message.Type >= 1 && message.Type <= 3 {
+				switch message.Type {
+				case 1, 2, 3:
 					t, _ := ais.DecodeClassAPositionReport(message.Payload)
 					fmt.Println(ais.PrintPositionData(t))
-				} else if message.Type == 4 {
+				case 4:
 					t, _ := ais.DecodeBaseStationReport(message.Payload)
 					fmt.Println(ais.PrintBaseStationReport(t))
-				} else if message.Type == 5 {
+				case 5:
 					t, _ := ais.DecodeStaticVoyageData(message.Payload)
 					fmt.Println(ais.PrintStaticVoyageData(t))
-				} else if message.Type == 255 {
+				case 8:
+					t, _ := ais.DecodeBinaryBroadcast(message.Payload)
+					fmt.Println(ais.PrintBinaryBroadcast(t))
+				case 255:
 					done <- true
-				} else {
+				default:
 					fmt.Printf("=== Message Type %2d ===\n", message.Type)
 					fmt.Printf(" Unsupported type \n\n")
 				}
