@@ -32,6 +32,9 @@ func main() {
 				} else if message.Type == 4 {
 					t, _ := ais.DecodeBaseStationReport(message.Payload)
 					fmt.Println(ais.PrintBaseStationReport(t))
+				} else if message.Type == 5 {
+					t, _ := ais.DecodeStaticVoyageData(message.Payload)
+					fmt.Println(ais.PrintStaticVoyageData(t))
 				} else if message.Type == 255 {
 					done <- true
 				} else {
@@ -50,3 +53,5 @@ func main() {
 	close(send)
 	<-done
 }
+
+

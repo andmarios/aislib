@@ -34,7 +34,7 @@ func DecodeBaseStationReport(payload string) (BaseStationReport, error) {
 
 	mType := decodeAisChar(data[0])
 	if mType != 4 {
-		return m, errors.New("Message isn't Base Station Report.")
+		return m, errors.New("Message isn't Base Station Report (type 4).")
 	}
 
 	//m.Repeat = decodeAisChar(data[1]) >> 4

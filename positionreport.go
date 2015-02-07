@@ -49,7 +49,7 @@ func DecodeClassAPositionReport(payload string) (ClassAPositionReport, error) {
 
 	m.Type = decodeAisChar(data[0])
 	if m.Type != 1 && m.Type != 2 && m.Type != 3 {
-		return m, errors.New("Message isn't Position Report.")
+		return m, errors.New("Message isn't Position Report (type 1, 2 or 3).")
 	}
 
 	//m.Repeat = decodeAisChar(data[1]) >> 4
