@@ -3,7 +3,6 @@ package ais
 import (
 	"errors"
 	"fmt"
-	//	"math"
 	"strconv"
 	"time"
 )
@@ -52,62 +51,31 @@ func DecodeStaticVoyageData(payload string) (StaticVoyageData, error) {
 
 	m.ShipType = uint8(bitsToInt(232, 239, data))
 
-	/*
+	m.ToBow = uint16(bitsToInt(240, 248, data))
+	m.ToStern = uint16(bitsToInt(249, 257, data))
+	m.ToPort = uint8(bitsToInt(258, 263, data))
+	m.ToStarboard = uint8(bitsToInt(264, 269, data))
 
-		//m.Status = (decodeAisChar(data[6]) << 4) >> 4
-		m.Status = uint8(bitsToInt(38, 41, data))
+	m.EPFD = uint8(bitsToInt(270, 273, data))
 
-		//m.Turn = float32(int8(decodeAisChar(data[7])<<2 | decodeAisChar(data[8])>>4))
-		m.Turn = float32(int8(bitsToInt(42, 49, data)))
-		if m.Turn != 0 && m.Turn <= 126 && m.Turn >= -126 {
-			sign := float32(1)
-			if math.Signbit(float64(m.Turn)) {
-				sign = -1
-			}
-			m.Turn = sign * (m.Turn / 4.733) * (m.Turn / 4.733)
+	// ETA does not include year, so we omit it too (it is set as 0000)
+	// cyear := time.Now().Year()
+	month := uint8(bitsToInt(274, 277, data))
+	day := uint8(bitsToInt(278, 282, data))
+	hour := uint8(bitsToInt(283, 287, data))
+	minute := uint8(bitsToInt(288, 293, data))
+	timeString := fmt.Sprintf("%d/%d %d:%d", month, day, hour, minute)
+	m.ETA, _ = time.Parse("1/2 15:4", timeString)
 
-		}
+	m.Draught = uint8(bitsToInt(294, 301, data))
 
-		//m.Speed = float32(uint16(decodeAisChar(data[8]))<<12>>6 | uint16(decodeAisChar(data[9])))
-		m.Speed = float32(bitsToInt(50, 59, data))
-		if m.Speed < 1022 {
-			m.Speed = m.Speed / 10
-		}
+	m.Destination = bitsToString(302, 421, data)
 
-		m.Accuracy = false
-		if decodeAisChar(data[10])>>5 == 1 {
-			m.Accuracy = true
-		}
+	m.DTE = false
+	if bitsToInt(422, 422, data) == 1 {
+		m.DTE = true
+	}
 
-		//m.Lon = float64((int32(decodeAisChar(data[10]))<<27 | int32(decodeAisChar(data[11]))<<21 |
-		//	int32(decodeAisChar(data[12]))<<15 | int32(decodeAisChar(data[13]))<<9 |
-		//	int32(decodeAisChar(data[14]))>>1<<4)) / 16
-		m.Lon = float64((int32(bitsToInt(61, 88, data)) << 4)) / 16
-		//m.Lat = float64((int32(decodeAisChar(data[14]))<<31 | int32(decodeAisChar(data[15]))<<25 |
-		//	int32(decodeAisChar(data[16]))<<19 | int32(decodeAisChar(data[17]))<<13 |
-		//	int32(decodeAisChar(data[18]))<<7 | int32(decodeAisChar(data[19]))>>4<<5)) / 32
-		m.Lat = float64((int32(bitsToInt(89, 115, data)) << 5)) / 32
-		m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
-
-		//m.Course = float32(uint16(decodeAisChar(data[19]))<<12>>4|uint16(decodeAisChar(data[20]))<<2|
-		//	uint16(decodeAisChar(data[21]))>>4) / 10
-		m.Course = float32(bitsToInt(116, 127, data)) / 10
-
-		//m.Heading = uint16(decodeAisChar(data[21]))<<12>>7 | uint16(decodeAisChar(data[22]))>>1
-		m.Heading = uint16(bitsToInt(128, 136, data))
-
-		//m.Second = decodeAisChar(data[22])<<7>>2 | decodeAisChar(data[23])>>1
-		m.Second = uint8(bitsToInt(137, 142, data))
-
-		m.Maneuver = decodeAisChar(data[23])<<7>>6 | decodeAisChar(data[24])>>5
-
-		m.RAIM = false
-		if decodeAisChar(data[24])<<6>>7 == 1 {
-			m.RAIM = true
-		}
-
-		m.Radio = bitsToInt(149, 167, data)
-	*/
 	return m, nil
 }
 
@@ -124,6 +92,13 @@ func PrintStaticVoyageData(m StaticVoyageData) string {
 		imo = strconv.Itoa(int(m.IMO))
 	}
 
+	draught := ""
+	if m.Draught == 0 {
+		draught = "Not available"
+	} else {
+		draught = strconv.Itoa(10*int(m.IMO)) + " meters"
+	}
+
 	message :=
 		fmt.Sprintf("=== Static and Voyage Related Data ===\n") +
 			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
@@ -132,9 +107,31 @@ func PrintStaticVoyageData(m StaticVoyageData) string {
 			fmt.Sprintf(" IMO number   : %s\n", imo) +
 			fmt.Sprintf(" Call Sign    : %s\n", m.Callsign) +
 			fmt.Sprintf(" Vessel Name  : %s\n", m.VesselName) +
-			fmt.Sprintf(" Ship Type    : %s\n", ShipType[int(m.ShipType)])
+			fmt.Sprintf(" Ship Type    : %s\n", ShipType[int(m.ShipType)]) +
+			fmt.Sprintf(" Dim to Bow   : %s\n", type5size2String(0, 511, int(m.ToBow))) +
+			fmt.Sprintf(" Dim to Stern : %s\n", type5size2String(0, 511, int(m.ToStern))) +
+			fmt.Sprintf(" Dim to Port  : %s\n", type5size2String(0, 511, int(m.ToPort))) +
+			fmt.Sprintf(" Dim to StrBrd: %s\n", type5size2String(0, 511, int(m.ToStarboard))) +
+			fmt.Sprintf(" EPFD         : %s\n", EpfdFixTypes[m.EPFD]) +
+			fmt.Sprintf(" ETA          : %s\n", m.ETA.String()) +
+			fmt.Sprintf(" Draught      : %s\n", draught) +
+			fmt.Sprintf(" Destination  : %s\n", m.Destination)
 
 	return message
+}
+
+// A small function to translate the size fields
+func type5size2String(min, max, size int) string {
+	s := ""
+	switch size {
+	case min:
+		s = "Not available"
+	case max:
+		s = ">" + strconv.Itoa(max) + " meters"
+	default:
+		s = strconv.Itoa(size) + " meters"
+	}
+	return s
 }
 
 // Ship types codes.
