@@ -12,9 +12,9 @@ func main() {
 	in := bufio.NewScanner(os.Stdin)
 	in.Split(bufio.ScanLines)
 
-	send := make(chan string, 1024)
-	receive := make(chan ais.Message, 1024)
-	failed := make(chan ais.FailedSentence, 1024)
+	send := make(chan string, 1024 * 8)
+	receive := make(chan ais.Message, 1024 * 8)
+failed := make(chan ais.FailedSentence, 1024 * 8)
 
 	done := make(chan bool)
 

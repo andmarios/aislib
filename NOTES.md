@@ -30,7 +30,7 @@
 
 ## Stats
 
-Out of 76175 type 1, 3, 4 messages analyzed:
+### Out of 76175 type 1, 3, 4 messages analyzed:
 
 71162 / 76175 Ship
  4344 / 76175 Coastal Station
@@ -39,3 +39,17 @@ Out of 76175 type 1, 3, 4 messages analyzed:
   109 / 76175 SAR —Search and Rescue Aircraft
    20 / 76175 Diver's radio
    01 / 76175 invalid MMSI
+
+### Out of 701088 messages analyzed:
+
+Type  1: 218359
+Type  3:  55917
+Type  4:  23239
+Type  5:  65672
+Type  8: 272742
+Type  9:    226
+Type 12:      3
+Type 13:      5
+Type 18:  25117
+Type 21:  17380
+Type 24:  22428

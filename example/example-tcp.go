@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/marine-travel/marine-ais"
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -74,22 +76,34 @@ func main() {
 	}()
 
 	// Connect to a remote AIS server. Read AIS sentences and forward them to the AIS router.
+	// If connection drops wait and reconnect.
 	remote := "ais1.shipraiser.net:6492"
-	serverAddr, err := net.ResolveTCPAddr("tcp", remote)
-	if err != nil {
-		log.Println(err)
-	}
-	conn, err := net.DialTCP("tcp", nil, serverAddr)
-	if err != nil {
-		log.Panicln(err)
-	}
-	defer conn.Close()
-
-	connbuf := bufio.NewScanner(conn)
-	connbuf.Split(bufio.ScanLines)
 	go func() {
-		for connbuf.Scan() {
-			send <- connbuf.Text()
+		sleep := 10 // How many seconds to sleep after a timeout
+		sleepD := time.Duration(sleep) * time.Second
+		for {
+			serverAddr, err := net.ResolveTCPAddr("tcp", remote)
+			if err != nil {
+				log.Println(err, errors.New("(retrying in " + strconv.Itoa(sleep) + " seconds)"))
+				time.Sleep(sleepD)
+				continue
+			}
+			conn, err := net.DialTCP("tcp", nil, serverAddr)
+			if err != nil {
+				log.Println(err, errors.New("(retrying in " + strconv.Itoa(sleep) + " seconds)"))
+				time.Sleep(sleepD)
+				continue
+			}
+			defer conn.Close()
+
+			connbuf := bufio.NewScanner(conn)
+			connbuf.Split(bufio.ScanLines)
+			for connbuf.Scan() {
+				send <- connbuf.Text()
+				conn.SetReadDeadline(time.Now().Add(15 * time.Second))
+			}
+			log.Println(remote + ": connection broken (retrying in " + strconv.Itoa(sleep) + " seconds)")
+			time.Sleep(sleepD)
 		}
 	}()
 
@@ -104,3 +118,9 @@ func main() {
 func dataHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", serveJSON)
 }
+
+
+
+
+
+
