@@ -44,6 +44,10 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 		"ASVD": true, "ATVD": true, "AXVD": true, "BSVD": true, "SAVD": true,
 	}
 	for sentence := range in {
+		if len(sentence) == 0 { // Do not process empty lines
+			failed <- FailedSentence{sentence, "Empty line"}
+			continue
+		}
 		tokens := strings.Split(sentence, ",") // I think this takes the major portion of time for this function (after benchmarking)
 
 		if !Nmea183ChecksumCheck(sentence) { // Checksum check

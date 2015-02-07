@@ -31,6 +31,9 @@ func bitsToInt(first, last int, payload []byte) uint32 {
 	from := first / 6
 	forTimes := last/6 - from
 
+	if len(payload) * 6 < last + 1 { // There are strange messages out there, this seems to be what decoders do
+		return 0
+	}
 	for i := 0; i <= forTimes; i++ {
 		// Instead of calling decodeAisChar we do the calculation manually here for speed.
 		temp = uint32(payload[from+i]) - 48
@@ -55,10 +58,10 @@ func bitsToInt(first, last int, payload []byte) uint32 {
 	return result
 }
 
-// BitsToString decodes text from an AIS payload. Text is packed in six bit ASCII
+// bitsToString decodes text from an AIS payload. Text is packed in six bit ASCII
 func bitsToString(first, last int, payload []byte) string {
 	length := (last - first + 1) / 6 // How many characters we expect
-	start := first/6 // At which byte the first character starts
+	start := first/6  // At which byte the first character starts
 	var text [64]byte // Not sure which the maximum text field size is, but this should be enough
 	char := uint8(0)
 
@@ -66,13 +69,16 @@ func bitsToString(first, last int, payload []byte) string {
 	// it is frequent that they aren't fully occupied. Transmitters use this to send shorter messages.
 	// We should handle this gracefully, adjusting the length of the text we expect to read.
 	if len(payload) * 6 < last + 1 {
+		if len(payload) * 6 < first + 5 { // Haven't seen this case yet (text field missing) but better be prepared
+			return ""
+		}
 		// Do not simplify this. It uses the uint type rounding method to get correct results
 		length = (len(payload) * 6 - first) / 6
 	}
 
 	remain := first%6
 
-	// In this if/else there is some code duplication but I think the speend enhancement is worth it.
+	// In this if/else there is some code duplication but I think the speed enhancement is worth it.
 	// The other way around would need 2*length branches. Now we have only 2.
 	if remain < 6 {
 		shiftLeftMost := uint8(remain + 2)

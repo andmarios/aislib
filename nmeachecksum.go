@@ -6,6 +6,9 @@ import "encoding/hex"
 // AIS messages are NMEA183 encoded.
 func Nmea183ChecksumCheck(sentence string) bool {
 	length := len(sentence)
+	if length < 5 { // Sentence isn't long enough to have a csum, avoid bounds out of range
+		return false
+	}
 
 	// Read the checksum from the AIS sentence
 	csum, err := hex.DecodeString(sentence[length-2:])
