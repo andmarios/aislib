@@ -1,5 +1,69 @@
 package ais
 
+// Contains MMSI owners' descriptions. Currently not used anywhere
+var MmsiCodes = [...]string{
+	"Ship", "Coastal Station", "Group of ships", "SAR —Search and Rescue Aircraft",
+	"Diver's radio", "Aids to navigation", "Auxiliary craft associated with parent ship",
+	"AIS SART —Search and Rescue Transmitter", "MOB —Man Overboard Device",
+	"EPIRB —Emergency Position Indicating Radio Beacon", "Invalid MMSI",
+}
+
+// DecodeMMSI returns a string with the type of the owner of the MMSI and its country
+// Some MMSIs aren't valid. There is some more information in some MMSIs (the satellite
+// equipment of the ship). We may add them in the future.
+// Have a look at http://en.wikipedia.org/wiki/Maritime_Mobile_Service_Identity
+func DecodeMMSI(m uint32) string {
+	owner := ""
+	country := ""
+	mid := uint32(1000)
+
+	// Current intervals:
+	// [0 00999999][010000000 099999999][100000000 199999999][200000000 799999999]
+	// [800000000 899999999]...[970000000 970999999]...[972000000 972999999]...
+	// [974000000 974999999]...[98000000 98999999][99000000 999999999]
+	switch {
+	case m >= 200000000 && m < 800000000:
+		mid = m / 1000000
+		owner = "Ship"
+	case m <= 9999999:
+		mid = m / 10000
+		owner = "Coastal Station"
+	case m <= 99999999:
+		mid = m / 100000
+		owner = "Group of ships"
+	case m <= 199999999:
+		mid = m / 1000 - 111000
+		owner = "SAR —Search and Rescue Aircraft"
+	case m < 900000000:
+		mid = m / 100000 - 8000
+		owner = "Diver's radio"
+	case m >= 990000000 && m < 1000000000:
+		mid = m / 10000 - 99000
+		owner = "Aids to navigation"
+	case m >= 980000000 && m < 990000000:
+		mid = m / 10000 - 98000
+		owner = "Auxiliary craft associated with parent ship"
+	case m >= 970000000 && m < 970999999:
+		mid = m / 1000 - 970000
+		owner = "AIS SART —Search and Rescue Transmitter"
+	case m >= 972000000 && m < 972999999:
+		owner = "MOB —Man Overboard Device"
+	case m >=974000000 && m < 974999999:
+		owner = "EPIRB —Emergency Position Indicating Radio Beacon"
+	default:
+		owner = "Invalid MMSI"
+	}
+
+	if mid < 1000 {
+		country = Mid[int(mid)]
+		if country == "" {
+			country = "Unknown Country ID"
+		}
+		return owner + ", " + country
+	}
+	return owner
+}
+
 // Maritime Identification Digits, have a look at http://www.itu.int/online/mms/glad/cga_mids.sh?lang=en
 var Mid = map[int]string {
 	201: "Albania (Republic of)",

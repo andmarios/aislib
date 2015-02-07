@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// We don't decode radio field, so testing on radio field isn't really verified.
+// Radio is a 19bit field which we decode as uint32. One would need to decode further
+// these 19 bits but its uneccesary for now.
 func TestDecodeClassAPositionReport(t *testing.T) {
 	cases := []struct {
 		payload string
