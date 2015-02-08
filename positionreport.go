@@ -52,6 +52,10 @@ func DecodeClassAPositionReport(payload string) (ClassAPositionReport, error) {
 		return m, errors.New("Message isn't Position Report (type 1, 2 or 3).")
 	}
 
+	// !!! This is the first decoding function written. Original decoding
+	// routines are left here as comments, in order to help anyone diving
+	// into binary field decoding.
+
 	//m.Repeat = decodeAisChar(data[1]) >> 4
 	m.Repeat = uint8(bitsToInt(6, 7, data))
 
@@ -85,15 +89,19 @@ func DecodeClassAPositionReport(payload string) (ClassAPositionReport, error) {
 		m.Accuracy = true
 	}
 
+	// Old method 1
 	//m.Lon = float64((int32(decodeAisChar(data[10]))<<27 | int32(decodeAisChar(data[11]))<<21 |
 	//	int32(decodeAisChar(data[12]))<<15 | int32(decodeAisChar(data[13]))<<9 |
 	//	int32(decodeAisChar(data[14]))>>1<<4)) / 16
-	m.Lon = float64((int32(bitsToInt(61, 88, data)) << 4)) / 16
 	//m.Lat = float64((int32(decodeAisChar(data[14]))<<31 | int32(decodeAisChar(data[15]))<<25 |
 	//	int32(decodeAisChar(data[16]))<<19 | int32(decodeAisChar(data[17]))<<13 |
 	//	int32(decodeAisChar(data[18]))<<7 | int32(decodeAisChar(data[19]))>>4<<5)) / 32
-	m.Lat = float64((int32(bitsToInt(89, 115, data)) << 5)) / 32
-	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
+	// Old method 2
+	//m.Lon = float64((int32(bitsToInt(61, 88, data)) << 4)) / 16
+	//m.Lat = float64((int32(bitsToInt(89, 115, data)) << 5)) / 32
+	// Finish or both old methods
+	//m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
+	m.Lon, m.Lat = cbnCoordinates(61, data)
 
 	//m.Course = float32(uint16(decodeAisChar(data[19]))<<12>>4|uint16(decodeAisChar(data[20]))<<2|
 	//	uint16(decodeAisChar(data[21]))>>4) / 10

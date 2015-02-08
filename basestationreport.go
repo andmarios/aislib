@@ -52,9 +52,7 @@ func DecodeBaseStationReport(payload string) (BaseStationReport, error) {
 		m.Accuracy = true
 	}
 
-	m.Lon = float64((int32(bitsToInt(79, 106, data)) << 4)) / 16
-	m.Lat = float64((int32(bitsToInt(107, 133, data)) << 5)) / 32
-	m.Lon, m.Lat = CoordinatesMin2Deg(m.Lon, m.Lat)
+	m.Lon, m.Lat = cbnCoordinates(79, data)
 
 	m.EPFD = uint8(bitsToInt(134, 137, data))
 
