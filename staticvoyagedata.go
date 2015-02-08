@@ -71,10 +71,7 @@ func DecodeStaticVoyageData(payload string) (StaticVoyageData, error) {
 
 	m.Destination = bitsToString(302, 421, data)
 
-	m.DTE = false
-	if bitsToInt(422, 422, data) == 1 {
-		m.DTE = true
-	}
+	m.DTE = cbnBool(422, data)
 
 	return m, nil
 }

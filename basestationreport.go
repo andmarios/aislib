@@ -47,19 +47,13 @@ func DecodeBaseStationReport(payload string) (BaseStationReport, error) {
 
 	m.Time, _ = GetReferenceTime(payload) // Some base stations do not report time, for this case we do not consider it as error
 
-	m.Accuracy = false
-	if decodeAisChar(data[13])>>5 == 1 {
-		m.Accuracy = true
-	}
+	m.Accuracy = cbnBool(78, data)
 
 	m.Lon, m.Lat = cbnCoordinates(79, data)
 
 	m.EPFD = uint8(bitsToInt(134, 137, data))
 
-	m.RAIM = false
-	if bitsToInt(148, 148, data) == 1 {
-		m.RAIM = true
-	}
+	m.RAIM = cbnBool(148, data)
 
 	m.Radio = bitsToInt(149, 167, data)
 	return m, nil

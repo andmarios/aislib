@@ -34,6 +34,17 @@ type ClassAPositionReport struct {
 	Maneuver uint8   // maneuver indicator (enumerated)
 }
 
+// A ClassBPositionReport is a decoded AIS position message (type 18).
+type ClassBPositionReport struct {
+	PositionReport
+	CSUnit   bool
+	Display  bool
+	DSC      bool
+	Band     bool
+	Msg22    bool
+	Assigned bool
+}
+
 // Navigation status codes
 var NavigationStatusCodes = [...]string{
 	"Under way using engine", "At anchor", "Not under command", "Restricted maneuverability",
@@ -49,7 +60,7 @@ func DecodeClassAPositionReport(payload string) (ClassAPositionReport, error) {
 
 	m.Type = decodeAisChar(data[0])
 	if m.Type != 1 && m.Type != 2 && m.Type != 3 {
-		return m, errors.New("Message isn't Position Report (type 1, 2 or 3).")
+		return m, errors.New("Message isn't Class A Position Report (type 1, 2 or 3).")
 	}
 
 	// !!! This is the first decoding function written. Original decoding
@@ -79,15 +90,13 @@ func DecodeClassAPositionReport(payload string) (ClassAPositionReport, error) {
 	}
 
 	//m.Speed = float32(uint16(decodeAisChar(data[8]))<<12>>6 | uint16(decodeAisChar(data[9])))
-	m.Speed = float32(bitsToInt(50, 59, data))
-	if m.Speed < 1022 {
-		m.Speed = m.Speed / 10
-	}
+	m.Speed = cbnSpeed(50, data)
 
-	m.Accuracy = false
-	if decodeAisChar(data[10])>>5 == 1 {
-		m.Accuracy = true
-	}
+	//m.Accuracy = false
+	//if decodeAisChar(data[10])>>5 == 1 {
+	//	m.Accuracy = true
+	//}
+	m.Accuracy = cbnBool(60, data)
 
 	// Old method 1
 	//m.Lon = float64((int32(decodeAisChar(data[10]))<<27 | int32(decodeAisChar(data[11]))<<21 |
@@ -115,12 +124,55 @@ func DecodeClassAPositionReport(payload string) (ClassAPositionReport, error) {
 
 	m.Maneuver = decodeAisChar(data[23])<<7>>6 | decodeAisChar(data[24])>>5
 
-	m.RAIM = false
+	//m.RAIM = false
+	//if decodeAisChar(data[24])<<6>>7 == 1 {
+	//	m.RAIM = true
+	//}
+	m.RAIM = cbnBool(148, data)
+
+	m.Radio = bitsToInt(149, 167, data)
+	return m, nil
+}
+
+// DecodeClassBPositionReport decodes [the payload of] an AIS position message (type 18)
+func DecodeClassBPositionReport(payload string) (ClassBPositionReport, error) {
+	data := []byte(payload)
+	var m ClassBPositionReport
+
+	m.Type = decodeAisChar(data[0])
+	if m.Type != 18 {
+		return m, errors.New("Message isn't Class B Position Report (type 18).")
+	}
+
+	m.Repeat = uint8(bitsToInt(6, 7, data))
+
+	m.MMSI = bitsToInt(8, 37, data)
+
+	m.Speed = cbnSpeed(46, data)
+
+	m.Accuracy = cbnBool(56, data)
+
+	m.Lon, m.Lat = cbnCoordinates(57, data)
+
+	m.Course = float32(bitsToInt(112, 123, data)) / 10
+
+	m.Heading = uint16(bitsToInt(124, 132, data))
+
+	m.Second = uint8(bitsToInt(133, 138, data))
+
+	m.CSUnit = cbnBool(141, data)
+	m.Display = cbnBool(142, data)
+	m.DSC = cbnBool(143, data)
+	m.Band = cbnBool(144, data)
+	m.Msg22 = cbnBool(145, data)
+	m.Assigned = cbnBool(146, data)
+
+	m.RAIM = cbnBool(147, data)
 	if decodeAisChar(data[24])<<6>>7 == 1 {
 		m.RAIM = true
 	}
 
-	m.Radio = bitsToInt(149, 167, data)
+	m.Radio = bitsToInt(148, 167, data)
 	return m, nil
 }
 

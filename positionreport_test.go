@@ -53,3 +53,41 @@ func BenchmarkDecodeClassAPositionReport(b *testing.B) {
 		DecodeClassAPositionReport("38u<a<?PAA2>P:WfuAO9PW<P0PuQ")
 	}
 }
+
+func TestDecodeClassBPositionReport(t *testing.T) {
+	cases := []struct {
+		payload string
+		want    ClassBPositionReport
+	}{
+		{
+			"B3ujWF0000DdVU8O:1H03wi5oP06",
+			ClassBPositionReport{
+				PositionReport: PositionReport{Type: 18, Repeat: 0, MMSI: 266119000, Speed: 0,
+				Accuracy: false, Lon: 18.085243333333334, Lat: 59.32718333333333, Course: 0,
+				Heading: 511, Second: 34, RAIM: true, Radio: 917510},
+				CSUnit: true, Display: false, DSC: true, Band: true, Msg22: true, Assigned: false},
+		},
+		{
+			"B3uIwBP008=QHv8Cerc;wwjUWP06",
+			ClassBPositionReport{
+				PositionReport: PositionReport{Type: 18, Repeat: 0, MMSI: 265715530, Speed: 0,
+				Accuracy: true, Lon: 11.81546, Lat: 58.07772333333333, Course: 326.3,
+				Heading: 511, Second: 37, RAIM: true, Radio: 917510},
+				CSUnit: true, Display: false, DSC: true, Band: true, Msg22: false, Assigned: false},
+		},
+	}
+	for _, c := range cases {
+		got, _ := DecodeClassBPositionReport(c.payload)
+		if got != c.want {
+			fmt.Println("Got : ", got)
+			fmt.Println("Want: ", c.want)
+			t.Errorf("DecodeClassBPositionReport(payload string)")
+		}
+	}
+}
+
+func BenchmarkDecodeClassBPositionReport(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		DecodeClassBPositionReport("B3ujWF0000DdVU8O:1H03wi5oP06")
+	}
+}
