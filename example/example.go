@@ -29,7 +29,7 @@ failed := make(chan ais.FailedSentence, 1024 * 8)
 				switch message.Type {
 				case 1, 2, 3:
 					t, _ := ais.DecodeClassAPositionReport(message.Payload)
-					fmt.Println(ais.PrintPositionData(t))
+					fmt.Println(ais.PrintClassAPositionReport(t))
 				case 4:
 					t, _ := ais.DecodeBaseStationReport(message.Payload)
 					fmt.Println(ais.PrintBaseStationReport(t))
@@ -39,6 +39,9 @@ failed := make(chan ais.FailedSentence, 1024 * 8)
 				case 8:
 					t, _ := ais.DecodeBinaryBroadcast(message.Payload)
 					fmt.Println(ais.PrintBinaryBroadcast(t))
+				case 18:
+					t, _ := ais.DecodeClassBPositionReport(message.Payload)
+					fmt.Println(ais.PrintClassBPositionReport(t))
 				case 255:
 					done <- true
 				default:

@@ -16,7 +16,8 @@ func TestDecodeClassAPositionReport(t *testing.T) {
 		{
 			"38u<a<?PAA2>P:WfuAO9PW<P0PuQ",
 			ClassAPositionReport{
-				PositionReport: PositionReport{Type: 3, Repeat: 0, MMSI: 601041200, Speed: 8.1,
+				PositionReport: PositionReport{
+					Type: 3, Repeat: 0, MMSI: 601041200, Speed: 8.1,
 					Accuracy: false, Lon: 31.130165, Lat: -29.784113333333334, Course: 243.4,
 					Heading: 230, Second: 16, RAIM: false, Radio: 135009},
 				Status: 15, Turn: -127, Maneuver: 0},
@@ -24,7 +25,8 @@ func TestDecodeClassAPositionReport(t *testing.T) {
 		{
 			"13P:v?h009Ogbr4NkiITkU>L089D",
 			ClassAPositionReport{
-				PositionReport: PositionReport{Type: 1, Repeat: 0, MMSI: 235060799, Speed: 0.9,
+				PositionReport: PositionReport{
+					Type: 1, Repeat: 0, MMSI: 235060799, Speed: 0.9,
 					Accuracy: false, Lon: -3.56725, Lat: 53.84251666666667, Course: 123,
 					Heading: 167, Second: 14, RAIM: false, Radio: 33364},
 				Status: 0, Turn: 0, Maneuver: 0},
@@ -32,7 +34,8 @@ func TestDecodeClassAPositionReport(t *testing.T) {
 		{
 			"13n@oD0PB@0IRqvQj@W;EppH088t19uvPT",
 			ClassAPositionReport{
-				PositionReport: PositionReport{Type: 1, Repeat: 0, MMSI: 258226000, Speed: 14.4,
+				PositionReport: PositionReport{
+					Type: 1, Repeat: 0, MMSI: 258226000, Speed: 14.4,
 					Accuracy: false, Lon: 5.580478333333334, Lat: 59.0441, Course: 290.3,
 					Heading: 284, Second: 12, RAIM: false, Radio: 33340},
 				Status: 0, Turn: -127, Maneuver: 0},
@@ -62,17 +65,19 @@ func TestDecodeClassBPositionReport(t *testing.T) {
 		{
 			"B3ujWF0000DdVU8O:1H03wi5oP06",
 			ClassBPositionReport{
-				PositionReport: PositionReport{Type: 18, Repeat: 0, MMSI: 266119000, Speed: 0,
-				Accuracy: false, Lon: 18.085243333333334, Lat: 59.32718333333333, Course: 0,
-				Heading: 511, Second: 34, RAIM: true, Radio: 917510},
+				PositionReport: PositionReport{
+					Type: 18, Repeat: 0, MMSI: 266119000, Speed: 0,
+					Accuracy: false, Lon: 18.085243333333334, Lat: 59.32718333333333, Course: 0,
+					Heading: 511, Second: 34, RAIM: true, Radio: 917510},
 				CSUnit: true, Display: false, DSC: true, Band: true, Msg22: true, Assigned: false},
 		},
 		{
 			"B3uIwBP008=QHv8Cerc;wwjUWP06",
 			ClassBPositionReport{
-				PositionReport: PositionReport{Type: 18, Repeat: 0, MMSI: 265715530, Speed: 0,
-				Accuracy: true, Lon: 11.81546, Lat: 58.07772333333333, Course: 326.3,
-				Heading: 511, Second: 37, RAIM: true, Radio: 917510},
+				PositionReport: PositionReport{
+					Type: 18, Repeat: 0, MMSI: 265715530, Speed: 0,
+					Accuracy: true, Lon: 11.81546, Lat: 58.07772333333333, Course: 326.3,
+					Heading: 511, Second: 37, RAIM: true, Radio: 917510},
 				CSUnit: true, Display: false, DSC: true, Band: true, Msg22: false, Assigned: false},
 		},
 	}

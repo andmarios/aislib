@@ -41,7 +41,7 @@ func main() {
 			case message = <-receive:
 				if message.Type >= 1 && message.Type <= 3 {
 					m, _ := ais.DecodeClassAPositionReport(message.Payload)
-					seen[m.MMSI] = shipData{m, ais.PrintPositionData(m)}
+					seen[m.MMSI] = shipData{m, ais.PrintClassAPositionReport(m)}
 				}
 			case problematic = <-failed:
 				log.Println(problematic)
