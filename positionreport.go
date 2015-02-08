@@ -176,11 +176,11 @@ func DecodeClassBPositionReport(payload string) (ClassBPositionReport, error) {
 	return m, nil
 }
 
-// PrintPositionData returns a formatted string with the detailed data of a AIS position message.
+// PrintClassAPositionReport returns a formatted string with the detailed data of a AIS position message.
 // Its main use is to act as a guide for any developer wishing to correctly parse an AIS position message,
 // since some parts of a message are enumareted, and other parts although they mainly are numeric values,
 // for certain values they can have a non-numeric meaning.
-func PrintPositionData(m ClassAPositionReport) string {
+func PrintClassAPositionReport(m ClassAPositionReport) string {
 	turn := ""
 	switch {
 	case m.Turn == 0:
@@ -260,6 +260,66 @@ func PrintPositionData(m ClassAPositionReport) string {
 			fmt.Sprintf(" Heading (HDG): %s\n", heading) +
 			fmt.Sprintf(" Manuever ind.: %s\n", maneuver) +
 			fmt.Sprintf(" RAIM         : %s\n", raim)
+
+	return message
+}
+
+// PrintClassBPositionReport returns a formatted string with the detailed data of a AIS position message.
+// Its main use is to act as a guide for any developer wishing to correctly parse an AIS position message,
+// since some parts of a message are enumareted, and other parts although they mainly are numeric values,
+// for certain values they can have a non-numeric meaning.
+func PrintClassBPositionReport(m ClassBPositionReport) string {
+	speed := ""
+	switch {
+	case m.Speed <= 102:
+		speed = strconv.FormatFloat(float64(m.Speed), 'f', 1, 32) + " knots"
+	case m.Speed == 1022:
+		speed = ">102.2 knots"
+	case m.Speed == 1023:
+		speed = "information not available"
+	}
+
+	accuracy := "High accuracy (<10m)"
+	if m.Accuracy == false {
+		accuracy = "Low accuracy (>10m)"
+	}
+
+	course := ""
+	switch {
+	case m.Course < 360:
+		course = fmt.Sprintf("%.1f°", m.Course)
+	case m.Course == 360:
+		course = "not available"
+	case m.Course > 360:
+		course = "please report this to developer"
+	}
+
+	heading := ""
+	switch {
+	case m.Heading <= 359:
+		heading = fmt.Sprintf("%d°", m.Heading)
+	case m.Heading == 511:
+		heading = "not available"
+	case m.Heading != 511 && m.Heading >= 360:
+		heading = "please report this to developer"
+	}
+
+	message :=
+		fmt.Sprintf("=== Class B Position Report ===\n") +
+			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
+			fmt.Sprintf(" MMSI         : %09d [%s]\n", m.MMSI, DecodeMMSI(m.MMSI)) +
+			fmt.Sprintf(" Speed (SOG)  : %s\n", speed) +
+			fmt.Sprintf(" Accuracy     : %s\n", accuracy) +
+			fmt.Sprintf(" Coordinates  : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
+			fmt.Sprintf(" Course (COG) : %s\n", course) +
+			fmt.Sprintf(" Heading (HDG): %s\n", heading) +
+			fmt.Sprintf(" CS Unit      : %t\n", m.CSUnit) +
+			fmt.Sprintf(" Display      : %t\n", m.Display) +
+			fmt.Sprintf(" DSC          : %t\n", m.DSC) +
+			fmt.Sprintf(" Band         : %t\n", m.Band) +
+			fmt.Sprintf(" Message 22   : %t\n", m.Msg22) +
+			fmt.Sprintf(" Assigned     : %t\n", m.Assigned) +
+			fmt.Sprintf(" RAIM         : %t\n", m.RAIM)
 
 	return message
 }
