@@ -65,18 +65,24 @@ func DecodeBaseStationReport(payload string) (BaseStationReport, error) {
 func GetReferenceTime(payload string) (time.Time, error) {
 	data := []byte(payload)
 
-	year := uint16(decodeAisChar(data[6]))<<12>>2 | uint16(decodeAisChar(data[7]))<<4 |
-		uint16(decodeAisChar(data[8]))>>2
+	//year := uint16(decodeAisChar(data[6]))<<12>>2 | uint16(decodeAisChar(data[7]))<<4 |
+	//	uint16(decodeAisChar(data[8]))>>2
+	year := bitsToInt(38, 51, data)
 	if year == 0 {
 		var t time.Time
 		return t, errors.New("station doesn't report time")
 	}
 
-	month := decodeAisChar(data[8])<<6>>4 | decodeAisChar(data[9])>>4
-	day := decodeAisChar(data[9])<<4>>3 | decodeAisChar(data[10])>>5
-	hour := decodeAisChar(data[10]) << 3 >> 3
-	minute := decodeAisChar(data[11])
-	second := decodeAisChar(data[12])
+	//month := decodeAisChar(data[8])<<6>>4 | decodeAisChar(data[9])>>4
+	//day := decodeAisChar(data[9])<<4>>3 | decodeAisChar(data[10])>>5
+	//hour := decodeAisChar(data[10]) << 3 >> 3
+	//minute := decodeAisChar(data[11])
+	//second := decodeAisChar(data[12])
+	month  := bitsToInt(52, 55, data)
+	day    := bitsToInt(56, 60, data)
+	hour   := bitsToInt(61, 65, data)
+	minute := bitsToInt(66, 71, data)
+	second := bitsToInt(72, 77, data)
 
 	timeString := fmt.Sprintf("%d/%d/%d %d:%d:%d", year, month, day, hour, minute, second)
 	t, _ := time.Parse("2006/1/2 15:4:5", timeString)

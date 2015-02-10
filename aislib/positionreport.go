@@ -122,7 +122,8 @@ func DecodeClassAPositionReport(payload string) (ClassAPositionReport, error) {
 	//m.Second = decodeAisChar(data[22])<<7>>2 | decodeAisChar(data[23])>>1
 	m.Second = uint8(bitsToInt(137, 142, data))
 
-	m.Maneuver = decodeAisChar(data[23])<<7>>6 | decodeAisChar(data[24])>>5
+	//m.Maneuver = decodeAisChar(data[23])<<7>>6 | decodeAisChar(data[24])>>5
+	m.Maneuver = uint8(bitsToInt(143, 144, data))
 
 	//m.RAIM = false
 	//if decodeAisChar(data[24])<<6>>7 == 1 {

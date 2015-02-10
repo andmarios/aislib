@@ -80,6 +80,7 @@ func bitsToString(first, last int, payload []byte) string {
 
 	// In this if/else there is some code duplication but I think the speed enhancement is worth it.
 	// The other way around would need 2*length branches. Now we have only 2.
+	// decodeAisChar function should be safe to use here since we check the payload's length
 	if remain < 6 {
 		shiftLeftMost := uint8(remain + 2)
 		shiftRightMost := uint8(6 - remain)
