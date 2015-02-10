@@ -15,11 +15,17 @@ func TestDecodeBaseStationReport(t *testing.T) {
 	}{
 		{
 			"402R3KiutR0Qk156V4QQTOA00<0;",
-			BaseStationReport{Repeat: 0, MMSI: 2655087, Time: caseTime1, Accuracy: false, Lon: 15.09579, Lat: 58.588368333333335, EPFD: 1, RAIM: false, Radio: 49163},
+			BaseStationReport{
+				Repeat: 0, MMSI: 2655087, Time: caseTime1, Accuracy: false, Lon: 15.09579,
+				Lat: 58.588368333333335, EPFD: 1, RAIM: false, Radio: 49163,
+			},
 		},
 		{
 			"4025boiutR0Qj0qgK<OodKW00@N1",
-			BaseStationReport{Repeat: 0, MMSI: 2190047, Time: caseTime2, Accuracy: false, Lon: 12.613716666666667, Lat: 55.69725, EPFD: 7, RAIM: false, Radio: 67457},
+			BaseStationReport{
+				Repeat: 0, MMSI: 2190047, Time: caseTime2, Accuracy: false, Lon: 12.613716666666667,
+				Lat: 55.69725, EPFD: 7, RAIM: false, Radio: 67457,
+			},
 		},
 	}
 	for _, c := range cases {

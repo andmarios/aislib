@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/marine-travel/marine-ais"
+	"github.com/marine-travel/marine-ais/aislib"
 	"log"
 	"net"
 	"net/http"

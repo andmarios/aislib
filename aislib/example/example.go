@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/marine-travel/marine-ais"
+	"github.com/marine-travel/marine-ais/aislib"
 	"log"
 	"os"
 )
