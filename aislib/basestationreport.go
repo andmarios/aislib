@@ -89,29 +89,3 @@ func GetReferenceTime(payload string) (time.Time, error) {
 
 	return t, nil
 }
-
-// PrintBaseStationReport returns a formatted string of a BaseStationReport. Mainly to help
-// developers with understanding base position reports.
-func PrintBaseStationReport(m BaseStationReport) string {
-	accuracy := "High accuracy (<10m)"
-	if m.Accuracy == false {
-		accuracy = "Low accuracy (>10m)"
-	}
-
-	raim := "not in use"
-	if m.RAIM == true {
-		raim = "in use"
-	}
-
-	message :=
-		fmt.Sprintf("=== Base Station Report ===\n") +
-			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
-			fmt.Sprintf(" MMSI         : %09d [%s]\n", m.MMSI, DecodeMMSI(m.MMSI)) +
-			fmt.Sprintf(" Time         : %s\n", m.Time.String()) +
-			fmt.Sprintf(" Accuracy     : %s\n", accuracy) +
-			fmt.Sprintf(" Coordinates  : %s\n", CoordinatesDeg2Human(m.Lon, m.Lat)) +
-			fmt.Sprintf(" EPFD         : %s\n", EpfdFixTypes[m.EPFD]) +
-			fmt.Sprintf(" RAIM         : %s\n", raim)
-
-	return message
-}

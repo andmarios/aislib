@@ -2,7 +2,6 @@ package ais
 
 import (
 	"errors"
-	"fmt"
 )
 
 // BinaryBroadcast is a Type 8 message
@@ -34,18 +33,6 @@ func DecodeBinaryBroadcast(payload string) (BinaryBroadcast, error) {
 	m.Data = payload // Data start at bit 56, but this way we simplify our code
 
 	return m, nil
-}
-
-// PrintBinaryBroadcast returns a string with some data for a Binary Broadcast message
-func PrintBinaryBroadcast(m BinaryBroadcast) string {
-
-	message :=
-		fmt.Sprintf("=== Binary Broadcast ===\n") +
-			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
-			fmt.Sprintf(" MMSI         : %09d [%s]\n", m.MMSI, DecodeMMSI(m.MMSI)) +
-			fmt.Sprintf(" DAC-FID      : %d-%d (%s)\n", m.DAC, m.FID, BinaryBroadcastType[int(m.DAC)][int(m.FID)])
-
-	return message
 }
 
 // Some Binary Broadcast types. The list isn't complete but I haven't searched for a better source

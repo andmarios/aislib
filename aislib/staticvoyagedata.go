@@ -3,7 +3,6 @@ package ais
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 )
 
@@ -74,61 +73,6 @@ func DecodeStaticVoyageData(payload string) (StaticVoyageData, error) {
 	m.DTE = cbnBool(422, data)
 
 	return m, nil
-}
-
-// PrintPositionData returns a formatted string with the detailed data of a AIS position message.
-// Its main use is to act as a guide for any developer wishing to correctly parse an AIS position message,
-// since some parts of a message are enumareted, and other parts although they mainly are numeric values,
-// for certain values they can have a non-numeric meaning.
-func PrintStaticVoyageData(m StaticVoyageData) string {
-
-	imo := ""
-	if m.IMO == 0 {
-		imo = "Inland Vessel"
-	} else {
-		imo = strconv.Itoa(int(m.IMO))
-	}
-
-	draught := ""
-	if m.Draught == 0 {
-		draught = "Not available"
-	} else {
-		draught = strconv.Itoa(10*int(m.IMO)) + " meters"
-	}
-
-	message :=
-		fmt.Sprintf("=== Static and Voyage Related Data ===\n") +
-			fmt.Sprintf(" Repeat       : %d\n", m.Repeat) +
-			fmt.Sprintf(" MMSI         : %09d [%s]\n", m.MMSI, DecodeMMSI(m.MMSI)) +
-			fmt.Sprintf(" AIS Version  : %d\n", m.AisVersion) +
-			fmt.Sprintf(" IMO number   : %s\n", imo) +
-			fmt.Sprintf(" Call Sign    : %s\n", m.Callsign) +
-			fmt.Sprintf(" Vessel Name  : %s\n", m.VesselName) +
-			fmt.Sprintf(" Ship Type    : %s\n", ShipType[int(m.ShipType)]) +
-			fmt.Sprintf(" Dim to Bow   : %s\n", type5size2String(0, 511, int(m.ToBow))) +
-			fmt.Sprintf(" Dim to Stern : %s\n", type5size2String(0, 511, int(m.ToStern))) +
-			fmt.Sprintf(" Dim to Port  : %s\n", type5size2String(0, 511, int(m.ToPort))) +
-			fmt.Sprintf(" Dim to StrBrd: %s\n", type5size2String(0, 511, int(m.ToStarboard))) +
-			fmt.Sprintf(" EPFD         : %s\n", EpfdFixTypes[m.EPFD]) +
-			fmt.Sprintf(" ETA          : %s\n", m.ETA.String()) +
-			fmt.Sprintf(" Draught      : %s\n", draught) +
-			fmt.Sprintf(" Destination  : %s\n", m.Destination)
-
-	return message
-}
-
-// A small function to translate the size fields
-func type5size2String(min, max, size int) string {
-	s := ""
-	switch size {
-	case min:
-		s = "Not available"
-	case max:
-		s = ">" + strconv.Itoa(max) + " meters"
-	default:
-		s = strconv.Itoa(size) + " meters"
-	}
-	return s
 }
 
 // Ship types codes.
