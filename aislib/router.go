@@ -59,7 +59,7 @@ func Router(in chan string, out chan Message, failed chan FailedSentence) {
 			padding, _ = strconv.Atoi(tokens[6][:1])
 			out <- Message{MessageType(tokens[5]), tokens[5], uint8(padding)}
 			if count > 1 { // Invalidate cache
-				for i := 0; i <= count; i++ {
+				for i := 0; i < count; i++ {
 					failed <- FailedSentence{cache[i], "Incomplete/out of order span sentence"}
 				}
 				count = 0
