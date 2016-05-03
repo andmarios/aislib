@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/marine-travel/marine-ais/aislib"
 	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/andmarios/aislib"
 )
 
 // Here are saved as JSON string the ships seen in the last 5-second period.
@@ -41,7 +42,7 @@ func main() {
 			case message = <-receive:
 				if message.Type >= 1 && message.Type <= 3 {
 					m, _ := ais.DecodeClassAPositionReport(message.Payload)
-					seen[m.MMSI] = shipData{m, ais.PrintClassAPositionReport(m)}
+					seen[m.MMSI] = shipData{m, m.String()}
 				}
 			case problematic = <-failed:
 				log.Println(problematic)
@@ -83,13 +84,13 @@ func main() {
 		for {
 			serverAddr, err := net.ResolveTCPAddr("tcp", remote)
 			if err != nil {
-				log.Println(err, errors.New("(retrying in " + strconv.Itoa(sleep) + " seconds)"))
+				log.Println(err, errors.New("(retrying in "+strconv.Itoa(sleep)+" seconds)"))
 				time.Sleep(sleepD)
 				continue
 			}
 			conn, err := net.DialTCP("tcp", nil, serverAddr)
 			if err != nil {
-				log.Println(err, errors.New("(retrying in " + strconv.Itoa(sleep) + " seconds)"))
+				log.Println(err, errors.New("(retrying in "+strconv.Itoa(sleep)+" seconds)"))
 				time.Sleep(sleepD)
 				continue
 			}
@@ -117,9 +118,3 @@ func main() {
 func dataHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", serveJSON)
 }
-
-
-
-
-
-

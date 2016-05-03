@@ -7,7 +7,7 @@ import (
 
 // PrintBaseStationReport returns a formatted string of a BaseStationReport. Mainly to help
 // developers with understanding base position reports.
-func PrintBaseStationReport(m BaseStationReport) string {
+func (m BaseStationReport) String() string {
 	accuracy := "High accuracy (<10m)"
 	if m.Accuracy == false {
 		accuracy = "Low accuracy (>10m)"
@@ -35,7 +35,7 @@ func PrintBaseStationReport(m BaseStationReport) string {
 // Its main use is to act as a guide for any developer wishing to correctly parse an AIS position message,
 // since some parts of a message are enumareted, and other parts although they mainly are numeric values,
 // for certain values they can have a non-numeric meaning.
-func PrintClassAPositionReport(m ClassAPositionReport) string {
+func (m ClassAPositionReport) String() string {
 	turn := ""
 	switch {
 	case m.Turn == 0:
@@ -123,7 +123,7 @@ func PrintClassAPositionReport(m ClassAPositionReport) string {
 // Its main use is to act as a guide for any developer wishing to correctly parse an AIS position message,
 // since some parts of a message are enumareted, and other parts although they mainly are numeric values,
 // for certain values they can have a non-numeric meaning.
-func PrintClassBPositionReport(m ClassBPositionReport) string {
+func (m ClassBPositionReport) String() string {
 	speed := ""
 	switch {
 	case m.Speed <= 102:
@@ -183,7 +183,7 @@ func PrintClassBPositionReport(m ClassBPositionReport) string {
 // Related Data (message type 5). Its main use is to act as a guide for any developer wishing to
 // correctly parse an AIS type 5 message since some parts are enumareted, and other parts although
 // they mainly are numeric values, for certain values they can have a non-numeric meaning.
-func PrintStaticVoyageData(m StaticVoyageData) string {
+func (m StaticVoyageData) String() string {
 
 	imo := ""
 	if m.IMO == 0 {
@@ -235,7 +235,7 @@ func type5size2String(min, max, size int) string {
 }
 
 // PrintBinaryBroadcast returns a string with some data for a Binary Broadcast message
-func PrintBinaryBroadcast(m BinaryBroadcast) string {
+func (m BinaryBroadcast) String() string {
 
 	message :=
 		fmt.Sprintf("=== Binary Broadcast ===\n") +
