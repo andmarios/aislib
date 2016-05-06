@@ -2,6 +2,25 @@
 
 A Go library to read AIS sentences and decode AIS messages.
 
+The most simple example of decoding and printing an AIS message:
+
+```
+$ cd examples/example
+$ echo '!AIVDM,1,1,,A,14eGrSPP00ncMJTO5C6aBwvP2D0?,0*7A' | go run example.go
+=== Class A Position Report (1) ===
+ Repeat       : 0
+ MMSI         : 316013198 [Ship, Canada]
+ Nav.Status   : Under way using engine
+ Turn (ROT)   : no turn information
+ Speed (SOG)  : 0.0 knots
+ Accuracy     : High accuracy (<10m)
+ Coordinates  : 130°18.9742'W  54°19.2666N
+ Course (COG) : 237.9°
+ Heading (HDG): not available
+ Manuever ind.: not available
+ RAIM         : in use
+```
+
 # History
 
 While I was working for _marine.travel_ —a social site for sea lovers— I wanted to polish my Go
@@ -65,4 +84,4 @@ Check `example.go` to understand how the router and decoding function works.
 
 # License
 
-Check `LICENSE` file. In sort it is GPL3 or greater.
+Check `LICENSE` file. In sort it is GPL version 3 or greater.
