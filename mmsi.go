@@ -1,4 +1,21 @@
-package ais
+// Copyright (c) 2015, Marios Andreopoulos.
+//
+// This file is part of aislib.
+//
+//  Aislib is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+//  Aislib is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+// along with aislib.  If not, see <http://www.gnu.org/licenses/>.
+
+package aislib
 
 // Contains MMSI owners' descriptions. Currently not used anywhere
 var MmsiCodes = [...]string{
@@ -32,23 +49,23 @@ func DecodeMMSI(m uint32) string {
 		mid = m / 100000
 		owner = "Group of ships"
 	case m <= 199999999:
-		mid = m / 1000 - 111000
+		mid = m/1000 - 111000
 		owner = "SAR —Search and Rescue Aircraft"
 	case m < 900000000:
-		mid = m / 100000 - 8000
+		mid = m/100000 - 8000
 		owner = "Diver's radio"
 	case m >= 990000000 && m < 1000000000:
-		mid = m / 10000 - 99000
+		mid = m/10000 - 99000
 		owner = "Aids to navigation"
 	case m >= 980000000 && m < 990000000:
-		mid = m / 10000 - 98000
+		mid = m/10000 - 98000
 		owner = "Auxiliary craft associated with parent ship"
 	case m >= 970000000 && m < 970999999:
-		mid = m / 1000 - 970000
+		mid = m/1000 - 970000
 		owner = "AIS SART —Search and Rescue Transmitter"
 	case m >= 972000000 && m < 972999999:
 		owner = "MOB —Man Overboard Device"
-	case m >=974000000 && m < 974999999:
+	case m >= 974000000 && m < 974999999:
 		owner = "EPIRB —Emergency Position Indicating Radio Beacon"
 	default:
 		owner = "Invalid MMSI"
@@ -65,7 +82,7 @@ func DecodeMMSI(m uint32) string {
 }
 
 // Maritime Identification Digits, have a look at http://www.itu.int/online/mms/glad/cga_mids.sh?lang=en
-var Mid = map[int]string {
+var Mid = map[int]string{
 	201: "Albania (Republic of)",
 	202: "Andorra (Principality of)",
 	203: "Austria",
