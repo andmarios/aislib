@@ -35,8 +35,6 @@ type PositionReport struct {
 	Course   float32 //course over ground - COG (sc U1)
 	Heading  uint16  // true heading - HDG
 	Second   uint8   // timestamp
-	RAIM     bool    // RAIM flag
-	Radio    uint32  // Radio status
 }
 
 // A ClassAPositionReport is a decoded AIS position message (messages of type 1, 2 or 3).
@@ -44,6 +42,8 @@ type PositionReport struct {
 // http://www.navcen.uscg.gov/?pageName=AISMessagesA
 type ClassAPositionReport struct {
 	PositionReport
+	RAIM     bool    // RAIM flag
+	Radio    uint32  // Radio status
 	Status   uint8   // navigation status (enumerated type)
 	Turn     float32 // rate of turn - ROT (sc - Special Calc I3)
 	Maneuver uint8   // maneuver indicator (enumerated)
@@ -52,12 +52,27 @@ type ClassAPositionReport struct {
 // A ClassBPositionReport is a decoded AIS position message (type 18).
 type ClassBPositionReport struct {
 	PositionReport
+	RAIM     bool   // RAIM flag
+	Radio    uint32 // Radio status
 	CSUnit   bool
 	Display  bool
 	DSC      bool
 	Band     bool
 	Msg22    bool
 	Assigned bool
+}
+
+// A ExtendedClassBPositionReport is a decoded AIS position message (type 19).
+type ExtendedClassBPositionReport struct {
+	PositionReport
+	VesselName  string
+	ShipType    uint8
+	ToBow       uint16 // Dimension to bow
+	ToStern     uint16 // Dimension to stern
+	ToPort      uint8  // Dimension to port
+	ToStarboard uint8  // Dimension to starboard
+	EPFD        uint8  // Position Fix Type (enumeration declared at basestationreport.go)
+	RAIM        bool   // RAIM flag
 }
 
 // Navigation status codes
@@ -189,5 +204,48 @@ func DecodeClassBPositionReport(payload string) (ClassBPositionReport, error) {
 	}
 
 	m.Radio = bitsToInt(148, 167, data)
+	return m, nil
+}
+
+// DecodeExtendedClassBPositionReport decodes [the payload of] an AIS extendedposition message (type 19)
+func DecodeExtendedClassBPositionReport(payload string) (ExtendedClassBPositionReport, error) {
+	data := []byte(payload)
+	var m ExtendedClassBPositionReport
+
+	m.Type = decodeAisChar(data[0])
+	if m.Type != 19 {
+		return m, errors.New("Message isn't Extended Class B Position Report (type 18).")
+	}
+
+	m.Repeat = uint8(bitsToInt(6, 7, data))
+
+	m.MMSI = bitsToInt(8, 37, data)
+
+	m.Speed = cbnSpeed(46, data)
+
+	m.Accuracy = cbnBool(56, data)
+
+	m.Lon, m.Lat = cbnCoordinates(57, data)
+
+	m.Course = float32(bitsToInt(112, 123, data)) / 10
+
+	m.Heading = uint16(bitsToInt(124, 132, data))
+
+	m.Second = uint8(bitsToInt(133, 138, data))
+
+	m.VesselName = bitsToString(143, 262, data)
+
+	m.ShipType = uint8(bitsToInt(263, 270, data))
+
+	m.ToBow = uint16(bitsToInt(271, 279, data))
+	m.ToStern = uint16(bitsToInt(280, 288, data))
+	m.ToPort = uint8(bitsToInt(289, 294, data))
+	m.ToStarboard = uint8(bitsToInt(295, 300, data))
+
+	m.EPFD = uint8(bitsToInt(301, 304, data))
+	m.RAIM = cbnBool(147, data)
+	if decodeAisChar(data[24])<<6>>7 == 1 {
+		m.RAIM = true
+	}
 	return m, nil
 }
