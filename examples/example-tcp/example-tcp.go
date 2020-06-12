@@ -35,13 +35,15 @@ import (
 // Here are saved as JSON string the ships seen in the last 5-second period.
 var serveJSON string
 
+var PORT string
+
 type shipData struct {
 	Data  ais.ClassAPositionReport
 	Human string
 }
 
 func main() {
-
+	PORT = "9090"
 	// Create an AIS router process to decode radio sentences
 	send := make(chan string, 1024)
 	receive := make(chan ais.Message, 1024)
@@ -127,8 +129,11 @@ func main() {
 	// Create a server to listen for files/data requests
 	http.HandleFunc("/data", dataHandler)
 	http.Handle("/", http.FileServer(http.Dir(".")))
-	http.ListenAndServe(":8080", nil)
-
+	fmt.Println("Starting TCP Server :", PORT)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", PORT), nil)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }
 
 // Function to serve the ships JSON string

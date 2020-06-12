@@ -55,7 +55,7 @@
             src="https://maps.googleapis.com/maps/api/js?sensor=true">
     </script>
     <script type="text/javascript">
-     Map=null;
+      mainMap = null;
      CenterLat=55.0;
      CenterLon=10.0;
      Planes={};
@@ -139,7 +139,7 @@
            } else {
              marker = new google.maps.Marker({
                position: new google.maps.LatLng(plane.Data.Lat, plane.Data.Lon),
-               map: Map,
+               map: mainMap,
                icon: getIconForPlane(plane)
              });
              plane.marker = marker;
@@ -151,26 +151,18 @@
            }
            marker.setTitle("Ship: " + plane.Data.MMSI)
          }
-                 /* Remove idle planes. */
-/*         for (var p in Planes) {
-           if (!stillhere[p]) {
-             Planes[p].marker.setMap(null);
-             delete Planes[p];
-           }
-}*/
          refreshGeneralInfo();
        });
      }
 
      function initialize() {
        var mapOptions = {
-         center: new google.maps.LatLng(CenterLat, CenterLon),
+         center:{lat: CenterLat, lng: CenterLon},
          zoom: 5,
          mapTypeId: google.maps.MapTypeId.ROADMAP
        };
-       console.log("ok");
-       Map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
-       console.log("ok");
+
+       mainMap = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
        /* Setup our timer to poll from the server. */
        window.setInterval(function() {
          fetchData();
@@ -181,7 +173,7 @@
   </head>
   <body onload="initialize()">
     <ul>
-      <li><a href="http://www.marine.travel"><img src="http://www.marine.travel/images/logo-beta.png" style="height:30px"></a></li>
+      <li><a href=""><img src="" style="height:30px"></a></li>
     </ul>
     <div id="map_canvas" style="width:80%; height:100%"></div>
     <div id="info">

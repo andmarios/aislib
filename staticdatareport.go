@@ -54,7 +54,7 @@ func DecodeStaticDataReport(payload string) (StaticDataReport, error) {
 
 	m.Repeat = uint8(bitsToInt(6, 7, data))
 
-	//m.MMSI = uint32(decodeAisChar(data[1]))<<28>>2 | uint32(decodeAisChar(data[2]))<<20 |
+	// m.MMSI = uint32(decodeAisChar(data[1]))<<28>>2 | uint32(decodeAisChar(data[2]))<<20 |
 	//	uint32(decodeAisChar(data[3]))<<14 | uint32(decodeAisChar(data[4]))<<8 |
 	//	uint32(decodeAisChar(data[5]))<<2 | uint32(decodeAisChar(data[6]))>>4
 	m.MMSI = bitsToInt(8, 37, data)
